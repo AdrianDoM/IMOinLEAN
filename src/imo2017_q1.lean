@@ -146,3 +146,99 @@ begin
 	have : a a₀ n < a a₀ M, from hN M hM.left,
 	linarith,
 end
+
+/-- If ¬ aₙ ≡ 2 [MOD 3] and aₙ > 9 then there is an index m > n such that aₘ < aₙ -/
+lemma foo (a₀ n : ℕ) (h1 : ¬ a a₀ n ≡ 2 [MOD 3]) (h2 : 9 < a a₀ n) :
+	∃ m, m > n ∧ a a₀ m < a a₀ n :=
+begin
+	let t := sqrt (a a₀ n), -- floor sqrt
+	have ht : 3 ≤ t,
+	{	apply le_sqrt.mpr,
+		apply le_of_lt h2 },
+	have : ∃ j : zmod 3, (↑t + j) * (t + j) = a a₀ n, -- want find the first square after a a₀ n
+	{ set an := (a a₀ n : zmod 3) with han,
+		fin_cases an,
+		{ set tm := (t : zmod 3) with htm,
+			fin_cases tm,
+	 		{ sorry },
+			{ sorry },
+			{ sorry } },
+		{ change an = 1 at h, sorry },
+		{ change an = 2 at h,
+			exfalso,
+			have : a a₀ n ≡ 2 [MOD 3],
+			{	sorry },
+			contradiction } },
+	cases this with j hj,
+	sorry,
+end
+
+
+/-- A multiple of 3 is always followed by a multiple of 3 -/
+lemma mul_three_of_mul_three (a₀ n : ℕ) (h : a a₀ n ≡ 0 [MOD 3]) :
+	∀ k, a a₀ (n + k) ≡ 0 [MOD 3] :=
+begin
+	intro k,
+	induction k with k ih,
+	{	simpa },
+	rw add_succ,
+	simp [a],
+	split_ifs with hsq,
+	{	rw [←hsq, modeq.modeq_zero_iff, prime.dvd_mul] at ih,
+		{	cases ih;	{ apply modeq.modeq_zero_iff.mpr, exact ih } },
+		norm_num },
+	rw ←add_zero 0,
+	apply modeq.modeq_add,
+	{ assumption },
+	simp [modeq],
+end
+
+#check sqrt
+
+/-- If aₙ ∈ {3,6,9}, then the sequence visits three infinitely many times -/
+lemma periodic_of_three_six_nine (a₀ n : ℕ) (h : a a₀ n = 3 ∨ a a₀ n = 6 ∨ a a₀ n = 9) :
+	periodic a₀ :=
+begin
+	use 3,
+	have : a a₀ n = 9 → a a₀ (n+1) = 3,
+	{ intro h,
+		simp [a],
+		split_ifs with h',
+		{	rw h,
+			refine sqrt_eq 3 },
+		rw h at h',
+		exfalso,
+		apply h',
+		sorry /- proof that sqrt 9 * sqrt 9 = 9 -/ },
+	have : a a₀ n = 6 → a a₀ (n+1) = 9,
+	{ intro h,
+		simp [a],
+		split_ifs with h',
+		{ rw h at h',
+			exfalso,
+			sorry /- proof that 6 is not a square -/ },
+		rw h },
+	have : a a₀ n = 3 → a a₀ (n+1) = 6,
+	{	intro h,
+		simp [a],
+		split_ifs with h',
+		{	rw h at h',
+			exfalso,
+			sorry /- proof that 3 is not a square -/ },
+		rw h },
+	sorry,
+end
+
+/-- If aₙ ≡ 0 [MOD 3], then there is an index m > n such that aₘ = 3 -/
+lemma term_equal_three_of_term_cong_zero (a₀ n : ℕ) (h : a a₀ n ≡ 0 [MOD 3]) :
+	∃ m, m > n ∧ a a₀ m = 3 :=
+begin
+	sorry
+end
+
+/-- If aₙ ≡ 1 [MOD 3], then there is an index m > n such that aₘ ≡ 2 [MOD 3] -/
+lemma term_cong_two_of_term_cong_one (a₀ n : ℕ) (h : a a₀ n ≡ 1 [MOD 3]) :
+	∃ m, m > n ∧ a a₀ m ≡ 2 [MOD 3] :=
+begin
+	sorry
+end
