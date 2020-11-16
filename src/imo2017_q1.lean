@@ -147,6 +147,159 @@ begin
 	linarith,
 end
 
+/-- There are no perfect squares strictly between a² and (a+1)² -/
+lemma no_middle_square {a n : ℕ} (hl : a * a < n) (hr : n < (a + 1) * (a + 1)):
+	¬ ∃ t, t * t = n :=
+begin
+	rintro ⟨t, rfl⟩,
+	have : a < t, from nat.mul_self_lt_mul_self_iff.mpr hl,
+	have : t < a + 1, from nat.mul_self_lt_mul_self_iff.mpr hr,
+	linarith,
+end
+
+/- This long lemma takes care of each possibility for b and t mod 3.
+Some parts involve repetitive computation so I suspect some refactoring is possible -/
+lemma first_square_aux {b t : ℕ} {bm tm : zmod 3} (hb : bm = b) (hbm : bm ≠ 2) (ht : tm = t)
+	(ht1 : t * t < b) (ht2 : b ≤ (t + 1) * (t + 1)) :
+	∃ (j : fin 3) n, b + 3 * n = (t + 1 + j) * (t + 1 + j) ∧
+	∀ k, k < n → ¬ ∃ r, r * r = b + 3 * k :=
+begin
+	have : bm * bm = bm,
+	{	fin_cases bm; ring,
+		contradiction },
+	let j : fin 3 := if tm = 2 then bm else (if bm = 1 then 0 else (if tm = 0 then 2 else 1)),
+	use j,
+	have : bm = (t + 1 + j) * (t + 1 + j),
+	{	simp [←ht, j],
+		symmetry,
+		split_ifs,
+		{	rw h, convert ‹bm * bm = bm›; abel },
+		{	rw h_1, ring, fin_cases tm; ring, contradiction },
+		{	rw h_2, ring, fin_cases bm, abel, repeat {contradiction} },
+		fin_cases tm,
+		{	contradiction },
+		{	fin_cases bm, dsimp, ring, repeat {contradiction} },
+		contradiction },
+	have : b ≤ (t + 1 + j) * (t + 1 + j),
+	{	have : 0 ≤ ↑j, dec_trivial,
+		have : t + 1 ≤ t + 1 + ↑j, linarith,
+		apply le_trans ht2,
+		apply mul_self_le_mul_self (nat.zero_le _) this },
+	have : (3 : ℤ) ∣ (t + 1 + j) * (t + 1 + j) - b,
+	{ apply (zmod.int_coe_zmod_eq_zero_iff_dvd _ 3).mp,
+		simp [←hb],
+		rw ‹bm = (t + 1 + j) * (t + 1 + j)›,
+		ring },
+	cases this with n hn,
+	cases n with n,
+	{	use n,
+		have h : b + 3 * n = (t + 1 + ↑j) * (t + 1 + ↑j),
+		{	apply (int.coe_nat_eq_coe_nat_iff _ _).mp,
+			simp,
+			rw [int.coe_nat_eq n, ←hn],
+			ring },
+		use h,
+		intros k hk hr,
+		have h1 : t * t < b + 3 * k, linarith,
+		simp [j] at h,
+		split_ifs at h,
+		{ fin_cases bm,
+			{ simp at h,
+		 		have h2 : b + 3 * k < (t + 1) * (t + 1), linarith, 
+				exact no_middle_square h1 h2 hr },
+			{ simp at h,
+				have h3 : (0 : zmod 3) = (t + 1) * (t + 1), rw [←ht, h_1], ring,
+				by_cases b + 3 * k < (t + 1) * (t + 1),
+				{ exact no_middle_square h1 h hr },
+				have h1 : (t + 1) * (t + 1) < b + 3 * k,
+				{	cases eq_or_lt_of_not_lt h with h h,
+					{ exfalso,
+						have : ↑(b + 3 * k) = (↑((t + 1) * (t + 1)) : zmod 3), rw h,
+						simp at this,
+						rw [←h3] at this,
+						have h : (1 : zmod 3) ≠ 0, norm_num,
+						exact h (eq.trans hb this) },
+					exact h },
+				have h2 : b + 3 * k < (t + 1 + 1) * (t + 1 + 1), linarith,
+				exact no_middle_square h1 h2 hr },
+			contradiction },
+		{ simp at h,
+			have h2 : b + 3 * k < (t + 1) * (t + 1), linarith,
+			exact no_middle_square h1 h2 hr },
+		{ simp at h,
+			fin_cases bm,
+			{ /- longest case. compare against (t + 1) * (t + 1) and (t + 2) * (t + 2) -/
+				by_cases b + 3 * k < (t + 1) * (t + 1),
+				{	exact no_middle_square h1 h hr },
+				have h1 : (t + 1) * (t + 1) < b + 3 * k,
+				{	cases eq_or_lt_of_not_lt h with h h,
+					{ exfalso, 
+						have h3 : (1 : zmod 3) = (t + 1) * (t + 1), rw [←ht, h_3], ring,
+						have : ↑(b + 3 * k) = (↑((t + 1) * (t + 1)) : zmod 3), rw h,
+						simp at this,
+						rw [←h3] at this,
+						exact h_2 (eq.trans hb this) },
+					exact h },
+				by_cases b + 3 * k < (t + 2) * (t + 2),
+				{	exact no_middle_square h1 h hr },
+				have h1 : (t + 2) * (t + 2) < b + 3 * k,
+				{ cases eq_or_lt_of_not_lt h with h h,
+					{ exfalso, 
+						have h3 : (1 : zmod 3) = (t + 2) * (t + 2), rw [←ht, h_3], ring,
+						have : ↑(b + 3 * k) = (↑((t + 2) * (t + 2)) : zmod 3), rw h,
+						simp at this,
+						rw [←h3] at this,
+						exact h_2 (eq.trans hb this) },
+					exact h },
+				have h2 : b + 3 * k < (t + 3) * (t + 3), linarith,
+				exact no_middle_square h1 h2 hr },
+			{ contradiction },
+			{ contradiction } },
+		{ simp at h,
+			fin_cases tm,
+			{ contradiction },
+			{ dsimp at ht,
+				fin_cases bm,
+				{ have h3 : (1 : zmod 3) = (t + 1) * (t + 1), rw ←ht, ring,
+					by_cases b + 3 * k < (t + 1) * (t + 1),
+					{ exact no_middle_square h1 h hr },
+					have h1 : (t + 1) * (t + 1) < b + 3 * k,
+					{	cases eq_or_lt_of_not_lt h with h h,
+						{ exfalso,
+							have : ↑(b + 3 * k) = (↑((t + 1) * (t + 1)) : zmod 3), rw h,
+							simp at this,
+							rw [←h3] at this,
+							exact h_2 (eq.trans hb this) },
+						exact h },
+					have h2 : b + 3 * k < (t + 1 + 1) * (t + 1 + 1), linarith,
+					exact no_middle_square h1 h2 hr },
+				{ contradiction },
+				{ contradiction } },
+			{ contradiction } } },
+	exfalso,
+	have : (0 : ℤ) ≤ (t + 1 + j) * (t + 1 + j) - b,
+	{	apply int.sub_nonneg_of_le,
+		norm_cast,
+		exact this },
+	rw hn at this,
+	have : 3 * -[1+ n] < 0,
+	{	apply int.mul_neg_of_pos_of_neg,
+		norm_num,
+		apply int.neg_succ_lt_zero },
+	linarith,
+end
+
+/-- If ¬ aₙ ≡ 2 [MOD 3] and aₙ > 9 then the next perfect square in the sequence is one of
+t², (t+1)² or (t+2)², where t is the largest natural number such that t² ≤ aₙ -/
+lemma first_square (a₀ n : ℕ) (h1 : ¬ a a₀ n ≡ 2 [MOD 3]) (h2 : 9 < a a₀ n) :
+	let t := sqrt (a a₀ n - 1) in
+	∃ (j : fin 3) m, n ≤ m ∧ a a₀ m = (t + 1 + j) * (t + 1 + j) ∧
+	∀ k, n ≤ k → k < n → sqrt (a a₀ k) * sqrt (a a₀ k) ≠ a a₀ k :=
+begin
+	intro,
+	sorry
+end
+
 /-- If ¬ aₙ ≡ 2 [MOD 3] and aₙ > 9 then there is an index m > n such that aₘ < aₙ -/
 lemma foo (a₀ n : ℕ) (h1 : ¬ a a₀ n ≡ 2 [MOD 3]) (h2 : 9 < a a₀ n) :
 	∃ m, m > n ∧ a a₀ m < a a₀ n :=
@@ -193,7 +346,6 @@ begin
 	simp [modeq],
 end
 
-#check sqrt
 
 /-- If aₙ ∈ {3,6,9}, then the sequence visits three infinitely many times -/
 lemma periodic_of_three_six_nine (a₀ n : ℕ) (h : a a₀ n = 3 ∨ a a₀ n = 6 ∨ a a₀ n = 9) :
@@ -209,14 +361,16 @@ begin
 		rw h at h',
 		exfalso,
 		apply h',
-		sorry /- proof that sqrt 9 * sqrt 9 = 9 -/ },
+		show sqrt (3 * 3) * sqrt (3 * 3) = 9,
+		rw sqrt_eq,
+		refl },
 	have : a a₀ n = 6 → a a₀ (n+1) = 9,
 	{ intro h,
 		simp [a],
 		split_ifs with h',
 		{ rw h at h',
 			exfalso,
-			sorry /- proof that 6 is not a square -/ },
+			apply @no_middle_square 2 6 _ _ ⟨sqrt 6, h'⟩; norm_num },
 		rw h },
 	have : a a₀ n = 3 → a a₀ (n+1) = 6,
 	{	intro h,
@@ -224,7 +378,7 @@ begin
 		split_ifs with h',
 		{	rw h at h',
 			exfalso,
-			sorry /- proof that 3 is not a square -/ },
+			apply @no_middle_square 1 3 _ _ ⟨sqrt 3, h'⟩; norm_num },
 		rw h },
 	sorry,
 end
