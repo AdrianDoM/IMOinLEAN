@@ -60,7 +60,7 @@ end
 
 /-- If two different terms of the sequence are equal, then it visits the same term
 infinitely many times -/
-lemma periodic_of_term_equal (a₀ : ℕ) (m n : ℕ) (hmn : m < n) (h : a a₀ m = a a₀ n) :
+lemma periodic_of_term_equal {a₀ m n : ℕ} (hmn : m < n) (h : a a₀ m = a a₀ n) :
 	periodic a₀ :=
 begin
 	use a a₀ m,
@@ -157,6 +157,16 @@ begin
 	have : bm * bm = bm,
 	{	fin_cases bm; ring,
 		contradiction },
+	/-
+		j is selected to find the first suitable entry in the following table.
+		+---+---------+---------+---------+
+		| t | (t+1)^2 | (t+2)^2 | (t+3)^2 |
+		+---+---------+---------+---------+
+		| 0 |       1 |       1 |       0 |
+		| 1 |       1 |       0 |       1 |
+		| 2 |       0 |       1 |       1 |
+		+---+---------+---------+---------+
+	-/
 	let j : fin 3 := if tm = 2 then bm else (if bm = 1 then 0 else (if tm = 0 then 2 else 1)),
 	use j,
 	have : bm = (t + 1 + j) * (t + 1 + j),
@@ -279,11 +289,9 @@ begin
 	linarith,
 end
 
-#check first_square_aux
-
 /-- If ¬ aₙ ≡ 2 [MOD 3] and aₙ > 9 then the next perfect square in the sequence is one of
 t², (t+1)² or (t+2)², where t is the largest natural number such that t² ≤ aₙ -/
-lemma first_square (a₀ n : ℕ) (h1 : ¬ a a₀ n ≡ 2 [MOD 3]) (h2 : 9 < a a₀ n) :
+lemma first_square {a₀ n : ℕ} (h1 : ¬ a a₀ n ≡ 2 [MOD 3]) (h2 : a a₀ n ≠ 0) :
 	let t := sqrt (a a₀ n - 1) in
 	∃ (j : fin 3) m, n ≤ m ∧ a a₀ m = (t + 1 + j) * (t + 1 + j) ∧
 	∀ k, n ≤ k → k < m → ¬ ∃ r, r * r = a a₀ k :=
@@ -294,7 +302,7 @@ begin
 		apply lt_of_le_of_lt (sqrt_le _),
 		rw ←pred_eq_sub_one,
 		apply pred_lt,
-		linarith },
+		assumption },
 	have ht2 : a a₀ n ≤ (t + 1) * (t + 1),
 	{	have : a a₀ n - 1 < (t + 1) * (t + 1), from lt_succ_sqrt _,
 		rw ←pred_eq_sub_one at this,
@@ -334,34 +342,38 @@ begin
 	exact hfirst _ hkni,
 end
 
-#check nat.sub_lt_left_iff_lt_add
-
 /-- If ¬ aₙ ≡ 2 [MOD 3] and aₙ > 9 then there is an index m > n such that aₘ < aₙ -/
-lemma foo (a₀ n : ℕ) (h1 : ¬ a a₀ n ≡ 2 [MOD 3]) (h2 : 9 < a a₀ n) :
+lemma term_lt_of_term_not_congr_2 (a₀ n : ℕ) (h1 : ¬ a a₀ n ≡ 2 [MOD 3]) (h2 : 9 < a a₀ n) :
 	∃ m, m > n ∧ a a₀ m < a a₀ n :=
 begin
-	let t := sqrt (a a₀ n), -- floor sqrt
-	have ht : 3 ≤ t,
-	{	apply le_sqrt.mpr,
-		apply le_of_lt h2 },
-	have : ∃ j : zmod 3, (↑t + j) * (t + j) = a a₀ n, -- want find the first square after a a₀ n
-	{ set an := (a a₀ n : zmod 3) with han,
-		fin_cases an,
-		{ set tm := (t : zmod 3) with htm,
-			fin_cases tm,
-	 		{ sorry },
-			{ sorry },
-			{ sorry } },
-		{ change an = 1 at h, sorry },
-		{ change an = 2 at h,
-			exfalso,
-			have : a a₀ n ≡ 2 [MOD 3],
-			{	sorry },
-			contradiction } },
-	cases this with j hj,
-	sorry,
+	rcases first_square h1 (by linarith) with ⟨j, m, hnm, ham, hfirst⟩,
+	use [m + 1, by linarith],
+	simp [a],
+	split_ifs with hsq hnsq,
+	{ apply sqrt_lt.mpr,
+		rw ham,
+		apply nat.mul_self_lt_mul_self,
+		have : 9 ≤ a a₀ n - 1, { rw ←pred_eq_sub_one, apply le_pred_of_lt h2 },
+		have h3 : 3 ≤ sqrt (a a₀ n - 1), { apply le_sqrt.mpr, linarith },
+		have h2 : 2 ≤ sqrt (a a₀ n - 1), from le_of_succ_le h3,
+		calc sqrt (a a₀ n - 1) + 1 + ↑j
+				≤ sqrt (a a₀ n - 1) + 3
+			:	by { have : ↑j ≤ 2, from le_of_lt_succ (fin.is_lt j),	linarith }
+		... ≤ sqrt (a a₀ n - 1) + sqrt (a a₀ n - 1)
+			: by linarith
+		... = 2 * sqrt (a a₀ n - 1)
+			: by rw two_mul
+		... ≤ sqrt (a a₀ n - 1) * sqrt (a a₀ n - 1)
+			: by { apply mul_le_mul h2, refl, repeat {linarith} }
+		... ≤ a a₀ n - 1
+			: by apply sqrt_le
+		... < a a₀ n
+			:	by { rw ←pred_eq_sub_one, apply pred_lt, linarith } },
+	exfalso,
+	have : sqrt (a a₀ m) = sqrt (a a₀ n - 1) + 1 + ↑j, { rw ham, apply sqrt_eq },
+	rw ←this at ham,
+	exact hsq (eq.symm ham),
 end
-
 
 /-- A multiple of 3 is always followed by a multiple of 3 -/
 lemma mul_three_of_mul_three (a₀ n : ℕ) (h : a a₀ n ≡ 0 [MOD 3]) :
@@ -387,36 +399,51 @@ end
 lemma periodic_of_three_six_nine (a₀ n : ℕ) (h : a a₀ n = 3 ∨ a a₀ n = 6 ∨ a a₀ n = 9) :
 	periodic a₀ :=
 begin
-	use 3,
-	have : a a₀ n = 9 → a a₀ (n+1) = 3,
-	{ intro h,
+	have h9 : ∀ n, a a₀ n = 9 → a a₀ (n+1) = 3,
+	{ intros n h,
 		simp [a],
 		split_ifs with h',
 		{	rw h,
-			refine sqrt_eq 3 },
+			apply sqrt_eq 3 },
 		rw h at h',
 		exfalso,
 		apply h',
 		show sqrt (3 * 3) * sqrt (3 * 3) = 9,
 		rw sqrt_eq,
 		refl },
-	have : a a₀ n = 6 → a a₀ (n+1) = 9,
-	{ intro h,
+	have h6 : ∀ n, a a₀ n = 6 → a a₀ (n+1) = 9,
+	{ intros n h,
 		simp [a],
 		split_ifs with h',
 		{ rw h at h',
 			exfalso,
 			apply @no_middle_square 2 6 _ _ ⟨sqrt 6, h'⟩; norm_num },
 		rw h },
-	have : a a₀ n = 3 → a a₀ (n+1) = 6,
-	{	intro h,
+	have h3 : ∀ n, a a₀ n = 3 → a a₀ (n+1) = 6,
+	{	intros n h,
 		simp [a],
 		split_ifs with h',
 		{	rw h at h',
 			exfalso,
 			apply @no_middle_square 1 3 _ _ ⟨sqrt 3, h'⟩; norm_num },
 		rw h },
-	sorry,
+	apply @periodic_of_term_equal _ n (n + 3) (by linarith),
+	rcases h with c3 | c6 | c9,
+	{	rw c3,
+		have : a a₀ (n+1) = 6, from h3 _ c3,
+		have : a a₀ (n+2) = 9, from h6 _ this,
+		have : a a₀ (n+3) = 3, from h9 _ this,
+		rw this },
+	{ rw c6,
+		have : a a₀ (n+1) = 9, from h6 _ c6,
+		have : a a₀ (n+2) = 3, from h9 _ this,
+		have : a a₀ (n+3) = 6, from h3 _ this,
+		rw this },
+	{ rw c9,
+		have : a a₀ (n+1) = 3, from h9 _ c9,
+		have : a a₀ (n+2) = 6, from h3 _ this,
+		have : a a₀ (n+3) = 9, from h6 _ this,
+		rw this },
 end
 
 /-- If aₙ ≡ 0 [MOD 3], then there is an index m > n such that aₘ = 3 -/
