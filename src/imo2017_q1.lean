@@ -447,6 +447,13 @@ begin
 		rw this },
 end
 
+lemma mul_three_le_9 {x : ℕ} (h9 : x ≤ 9) (h3 : 3 ∣ x) : x = 0 ∨ x = 3 ∨ x = 6 ∨ x = 9 :=
+begin
+    cases h3 with k h3k,
+    have : k ≤ 3 := by linarith,
+    interval_cases k; dec_trivial!,
+end
+
 /-- If aₙ ≡ 0 [MOD 3], then there is an index m > n such that aₘ = 3 -/
 lemma periodic_of_term_cong_zero (a₀ n : ℕ) (h : a a₀ n ≡ 0 [MOD 3]) :
 	periodic a₀ :=
@@ -483,19 +490,10 @@ begin
 		rw this at hm,
 		use [m, hnm, hm] },
 	rcases this with ⟨m, hnm, hm⟩,
-	have : a a₀ m ≡ 0 [MOD 3], from mul_three_of_mul_three h m hnm,
 	have : a a₀ m = 0 ∨ a a₀ m = 3 ∨ a a₀ m = 6 ∨ a a₀ m = 9,
-	{	interval_cases a a₀ m,
-		{ left, exact h_1 },
-		{ rw h_1 at this, contradiction },
-		{ rw h_1 at this, contradiction },
-		{ right, left, exact h_1 },
-		{ rw h_1 at this, contradiction },
-		{ rw h_1 at this, contradiction },
-		{ right, right, left, exact h_1 },
-		{ rw h_1 at this, contradiction },
-		{ rw h_1 at this, contradiction },
-		{ right, right, right, exact h_1}	},
+	{	apply mul_three_le_9 hm,
+		rw ←modeq.modeq_zero_iff,
+		exact mul_three_of_mul_three h m hnm },
 	cases this with h0 h369,
 	{	apply @periodic_of_term_equal _ m (m + 1) (lt_succ_self m), 
 		rw h0,
@@ -565,9 +563,87 @@ begin
 		rw this },
 end
 
+lemma eq_1_4_7_of_cong_1_le_9 (x : ℕ) (h9 : x ≤ 9) (h1 : x ≡ 1 [MOD 3]) :
+	x = 1 ∨ x = 4 ∨ x = 7 :=
+begin
+	by_cases h : x < 1,
+	{	interval_cases x, contradiction },
+	have hx1 : 1 ≤ x, from le_of_not_lt h,
+	have : 3 ∣ x - 1, from (modeq.modeq_iff_dvd' hx1).mp (modeq.symm h1),
+	cases this with k h3k,
+	have : x = 3 * k + 1, { rw [←nat.sub_add_cancel hx1, h3k] },
+	have : k ≤ 8, linarith,
+	interval_cases k; dec_trivial!,
+end
+
 /-- If aₙ ≡ 1 [MOD 3], then there is an index m > n such that aₘ ≡ 2 [MOD 3] -/
 lemma term_cong_two_of_term_cong_one (a₀ n : ℕ) (h : a a₀ n ≡ 1 [MOD 3]) :
 	∃ m, m > n ∧ a a₀ m ≡ 2 [MOD 3] :=
 begin
+	by_contradiction hf,
+	have h1 : ∀ k, a a₀ (n + k) ≡ 1 [MOD 3],
+	{ intro k,
+		induction k with k ih,
+		{ assumption },
+		rw add_succ,
+		simp [a],
+		split_ifs with h',
+		{	apply (zmod.eq_iff_modeq_nat 3).mp,
+			set t : zmod 3 := sqrt (a a₀ (n + k)) with ht,
+			have h' : (↑(sqrt (a a₀ (n + k)) * sqrt (a a₀ (n + k))) : zmod 3) = ↑(a a₀ (n + k)),
+			{	congr, assumption },
+			simp [←ht] at h',
+			have ih : (↑(a a₀ (n + k)) : zmod 3) = ↑1,
+			{	apply (zmod.eq_iff_modeq_nat 3).mpr, assumption },
+			rw ih at h',
+			fin_cases t,
+			{	have : t * t = ↑0, rw h_1, ring,
+				have : ↑0 = ↑1, from eq.trans (eq.symm this) h',
+				rw (zmod.eq_iff_modeq_nat 3) at this,
+				have : 3 ∣ 1, from modeq.modeq_zero_iff.mp (eq.symm this),
+				have : 3 ≤ 1, from le_of_dvd (by norm_num) this,
+				contradiction },
+			{ assumption },
+			{	dsimp at h_1,
+				have : a a₀ (n + k).succ = sqrt (a a₀ (n + k)),	{	simp [a], split_ifs, refl },
+				have : t = ↑(a a₀ (n + k).succ), { rw this },
+				exfalso,
+				apply hf ⟨(n + k).succ, _, _⟩,
+				{ apply lt_of_lt_of_le (lt_succ_self n),
+					apply succ_le_succ,
+					linarith },
+				rw ←(zmod.eq_iff_modeq_nat 3),
+				rwa ←this } },
+		rw ←(zmod.eq_iff_modeq_nat 3),
+		simp,
+		rw ←(zmod.eq_iff_modeq_nat 3) at ih,
+		assumption },
+	have hlt : ∀ k, 9 ≤ a a₀ n - k → ∃ m, n ≤ m ∧ a a₀ m ≤ a a₀ n - k,
+	{ intro k,
+		induction k with k ih,
+		{	intro, use [n, le_refl n, by refl] },
+		intro hk,
+		have hk' : 9 ≤ a a₀ n - k,
+		{	rw sub_succ at hk,
+			apply le_trans hk (pred_le _) },
+		rcases ih hk' with ⟨m, hnm, hm⟩,
+		by_cases h9 : a a₀ m ≤ 9,
+		{	use [m, hnm, le_trans h9 hk] },
+		have h0 : a a₀ m ≡ 1 [MOD 3],
+		{ convert h1 (m - n),
+			symmetry,
+			apply nat.add_sub_cancel' hnm },
+		have hn2 : ¬ a a₀ m ≡ 2 [MOD 3], -- this should be a lot easier
+		{	intro h,
+			have : 1 ≡ 2 [MOD 3], from modeq.trans (modeq.symm h0) h,
+			rw @modeq.modeq_iff_dvd' _ 1 2 (by norm_num) at this,
+			simp at this,
+			linarith },
+		have h9 : 9 < a a₀ m, from lt_of_not_ge h9,
+		rcases term_lt_of_term_not_congr_2 hn2 h9 with ⟨m', hnm', hm'⟩,
+		use [m', le_trans hnm (le_of_lt hnm')],
+		rw sub_succ,
+		apply le_pred_of_lt,
+		apply lt_of_lt_of_le hm' hm },
 	sorry
 end
