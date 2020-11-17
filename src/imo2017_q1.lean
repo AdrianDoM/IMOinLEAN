@@ -289,16 +289,62 @@ begin
 	linarith,
 end
 
+#check first_square_aux
+
 /-- If ¬ aₙ ≡ 2 [MOD 3] and aₙ > 9 then the next perfect square in the sequence is one of
 t², (t+1)² or (t+2)², where t is the largest natural number such that t² ≤ aₙ -/
 lemma first_square (a₀ n : ℕ) (h1 : ¬ a a₀ n ≡ 2 [MOD 3]) (h2 : 9 < a a₀ n) :
 	let t := sqrt (a a₀ n - 1) in
 	∃ (j : fin 3) m, n ≤ m ∧ a a₀ m = (t + 1 + j) * (t + 1 + j) ∧
-	∀ k, n ≤ k → k < n → sqrt (a a₀ k) * sqrt (a a₀ k) ≠ a a₀ k :=
+	∀ k, n ≤ k → k < m → ¬ ∃ r, r * r = a a₀ k :=
 begin
 	intro,
-	sorry
+	have ht1 : t * t < a a₀ n,
+	{	simp [t],
+		apply lt_of_le_of_lt (sqrt_le _),
+		rw ←pred_eq_sub_one,
+		apply pred_lt,
+		linarith },
+	have ht2 : a a₀ n ≤ (t + 1) * (t + 1),
+	{	have : a a₀ n - 1 < (t + 1) * (t + 1), from lt_succ_sqrt _,
+		rw ←pred_eq_sub_one at this,
+		apply le_of_pred_lt this },
+	set am : zmod 3 := a a₀ n with ham,
+	set tm : zmod 3 := t with htm,
+	have hamn2 : am ≠ 2,
+	{ by_contradiction,
+		simp at h,
+		have : (↑(a a₀ n) : zmod 3) = ↑2, rw ←ham, assumption,
+		rw zmod.eq_iff_modeq_nat at this,
+		exact h1 this },
+	rcases first_square_aux ham hamn2 htm ht1 ht2 with ⟨j, i, hsq, hfirst⟩,
+	use [j, n + i, by simp],
+	have hi : ∀ k, k ≤ i → a a₀ (n + k) = a a₀ n + 3 * k,
+	{	intro k,
+		induction k with k ih,
+		{	intro, ring },
+		intro hk,
+		have ih : a a₀ (n + k) = a a₀ n + 3 * k, from ih (le_of_succ_le hk),
+		rw add_succ,
+		simp [a],
+		split_ifs,
+		{ exfalso,
+			apply hfirst k (lt_of_succ_le hk) ⟨sqrt (a a₀ n + 3 * k), _⟩,
+			rwa ←ih },
+		rw [ih, add_assoc, ←mul_succ] },
+	split,
+	{	rwa hi i (by refl) },
+	intros k hk1 hk2,
+	have hkni : k - n < i, from (nat.sub_lt_left_iff_lt_add hk1).mpr hk2,
+	have : a a₀ k = a a₀ n + 3 * (k - n),
+	{	rw ←hi (k - n) _,
+		{	rw nat.add_sub_cancel' hk1 },
+		exact le_of_lt hkni },
+	rw this,
+	exact hfirst _ hkni,
 end
+
+#check nat.sub_lt_left_iff_lt_add
 
 /-- If ¬ aₙ ≡ 2 [MOD 3] and aₙ > 9 then there is an index m > n such that aₘ < aₙ -/
 lemma foo (a₀ n : ℕ) (h1 : ¬ a a₀ n ≡ 2 [MOD 3]) (h2 : 9 < a a₀ n) :
