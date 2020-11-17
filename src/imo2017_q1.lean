@@ -343,7 +343,7 @@ begin
 end
 
 /-- If ¬ aₙ ≡ 2 [MOD 3] and aₙ > 9 then there is an index m > n such that aₘ < aₙ -/
-lemma term_lt_of_term_not_congr_2 (a₀ n : ℕ) (h1 : ¬ a a₀ n ≡ 2 [MOD 3]) (h2 : 9 < a a₀ n) :
+lemma term_lt_of_term_not_congr_2 {a₀ n : ℕ} (h1 : ¬ a a₀ n ≡ 2 [MOD 3]) (h2 : 9 < a a₀ n) :
 	∃ m, m > n ∧ a a₀ m < a a₀ n :=
 begin
 	rcases first_square h1 (by linarith) with ⟨j, m, hnm, ham, hfirst⟩,
@@ -376,27 +376,31 @@ begin
 end
 
 /-- A multiple of 3 is always followed by a multiple of 3 -/
-lemma mul_three_of_mul_three (a₀ n : ℕ) (h : a a₀ n ≡ 0 [MOD 3]) :
-	∀ k, a a₀ (n + k) ≡ 0 [MOD 3] :=
+lemma mul_three_of_mul_three {a₀ n : ℕ} (h : a a₀ n ≡ 0 [MOD 3]) :
+	∀ m, n ≤ m → a a₀ m ≡ 0 [MOD 3] :=
 begin
-	intro k,
-	induction k with k ih,
-	{	simpa },
-	rw add_succ,
-	simp [a],
-	split_ifs with hsq,
-	{	rw [←hsq, modeq.modeq_zero_iff, prime.dvd_mul] at ih,
-		{	cases ih;	{ apply modeq.modeq_zero_iff.mpr, exact ih } },
-		norm_num },
-	rw ←add_zero 0,
-	apply modeq.modeq_add,
-	{ assumption },
-	simp [modeq],
+	have : ∀ k, a a₀ (n + k) ≡ 0 [MOD 3],
+	{ intro k,
+		induction k with k ih,
+		{	simpa },
+		rw add_succ,
+		simp [a],
+		split_ifs with hsq,
+		{	rw [←hsq, modeq.modeq_zero_iff, prime.dvd_mul] at ih,
+			{	cases ih;	{ apply modeq.modeq_zero_iff.mpr, exact ih } },
+			norm_num },
+		rw ←add_zero 0,
+		apply modeq.modeq_add,
+		{ assumption },
+		simp [modeq] },
+	intros m hnm,
+	convert this (m - n),
+	rw nat.add_sub_cancel' hnm,
 end
 
 
 /-- If aₙ ∈ {3,6,9}, then the sequence visits three infinitely many times -/
-lemma periodic_of_three_six_nine (a₀ n : ℕ) (h : a a₀ n = 3 ∨ a a₀ n = 6 ∨ a a₀ n = 9) :
+lemma periodic_of_three_six_nine {a₀ n : ℕ} (h : a a₀ n = 3 ∨ a a₀ n = 6 ∨ a a₀ n = 9) :
 	periodic a₀ :=
 begin
 	have h9 : ∀ n, a a₀ n = 9 → a a₀ (n+1) = 3,
@@ -447,10 +451,63 @@ begin
 end
 
 /-- If aₙ ≡ 0 [MOD 3], then there is an index m > n such that aₘ = 3 -/
-lemma term_equal_three_of_term_cong_zero (a₀ n : ℕ) (h : a a₀ n ≡ 0 [MOD 3]) :
-	∃ m, m > n ∧ a a₀ m = 3 :=
+lemma periodic_of_term_cong_zero (a₀ n : ℕ) (h : a a₀ n ≡ 0 [MOD 3]) :
+	periodic a₀ :=
 begin
-	sorry
+	have hlt : ∀ k, 9 ≤ a a₀ n - k → ∃ m, n ≤ m ∧ a a₀ m ≤ a a₀ n - k,
+	{	intro k,
+		induction k with k ih,
+		{	intro, use [n, by refl], rw nat.sub_zero },
+		intro hk,
+		have hk' : 9 ≤ a a₀ n - k,
+		{	rw sub_succ at hk,
+			apply le_trans hk (pred_le _) },
+		rcases ih hk' with ⟨m, hnm, hm⟩,
+		by_cases h9 : a a₀ m ≤ 9,
+		{	use [m, hnm, le_trans h9 hk] },
+		have h0 : a a₀ m ≡ 0 [MOD 3], from mul_three_of_mul_three h m hnm,
+		have hn2 : ¬ a a₀ m ≡ 2 [MOD 3], -- this should be a lot easier
+		{	intro h,
+			have : 2 ≡ 0 [MOD 3], from modeq.trans (modeq.symm h) h0,
+			rw [modeq.modeq_zero_iff] at this,
+			have : 3 ≤ 2, from le_of_dvd (by norm_num) this,
+			linarith },
+		have h9 : 9 < a a₀ m, from lt_of_not_ge h9,
+		rcases term_lt_of_term_not_congr_2 hn2 h9 with ⟨m', hnm', hm'⟩,
+		use [m', le_trans hnm (le_of_lt hnm')],
+		rw sub_succ,
+		apply le_pred_of_lt,
+		apply lt_of_lt_of_le hm' hm	},
+	have : ∃ m, n ≤ m ∧ a a₀ m ≤ 9,
+	{	by_cases h9 : a a₀ n ≤ 9,
+		{ use [n, h9] },
+		have : a a₀ n - (a a₀ n - 9) = 9, from nat.sub_sub_self (le_of_not_le h9),
+		rcases hlt (a a₀ n - 9) (le_of_eq (eq.symm this)) with ⟨m, hnm, hm⟩,
+		rw this at hm,
+		use [m, hnm, hm] },
+	rcases this with ⟨m, hnm, hm⟩,
+	have : a a₀ m ≡ 0 [MOD 3], from mul_three_of_mul_three h m hnm,
+	have : a a₀ m = 0 ∨ a a₀ m = 3 ∨ a a₀ m = 6 ∨ a a₀ m = 9,
+	{	interval_cases a a₀ m,
+		{ left, exact h_1 },
+		{ rw h_1 at this, contradiction },
+		{ rw h_1 at this, contradiction },
+		{ right, left, exact h_1 },
+		{ rw h_1 at this, contradiction },
+		{ rw h_1 at this, contradiction },
+		{ right, right, left, exact h_1 },
+		{ rw h_1 at this, contradiction },
+		{ rw h_1 at this, contradiction },
+		{ right, right, right, exact h_1}	},
+	cases this with h0 h369,
+	{	apply @periodic_of_term_equal _ m (m + 1) (lt_succ_self m), 
+		rw h0,
+		simp [a],
+		split_ifs,
+		{	rw h0, refl },
+		rw h0 at h_1,
+		contradiction },
+	apply periodic_of_three_six_nine h369,
 end
 
 /-- If aₙ ≡ 1 [MOD 3], then there is an index m > n such that aₘ ≡ 2 [MOD 3] -/
