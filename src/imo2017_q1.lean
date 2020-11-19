@@ -1,6 +1,4 @@
 /-
-Copyright (c) 2020 Adrián Doña Mateo. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
 Author: Adrián Doña Mateo.
 -/
 
@@ -9,6 +7,9 @@ import data.nat.modeq
 import data.nat.sqrt
 import data.zmod.basic
 import tactic
+
+import modeq
+
 open nat
 
 /-!
@@ -110,8 +111,6 @@ begin
 		apply not_square_of_two_mod_three this ⟨_, hsq⟩ },
 	rw [ih, add_assoc, ←mul_succ],
 end
-
-#check nat.add_sub_cancel'
 
 /-- If a term of the sequence is congruent to 2 modulo 3 then it is not periodic -/
 lemma not_periodic_of_term_cong_two (a₀ n : ℕ) (h : a a₀ n ≡ 2 [MOD 3]) :
@@ -469,13 +468,8 @@ begin
 		rcases ih hk' with ⟨m, hnm, hm⟩,
 		by_cases h9 : a a₀ m ≤ 9,
 		{	use [m, hnm, le_trans h9 hk] },
-		have h0 : a a₀ m ≡ 0 [MOD 3], from mul_three_of_mul_three h m hnm,
-		have hn2 : ¬ a a₀ m ≡ 2 [MOD 3], -- this should be a lot easier
-		{	intro h,
-			have : 2 ≡ 0 [MOD 3], from modeq.trans (modeq.symm h) h0,
-			rw [modeq.modeq_zero_iff] at this,
-			have : 3 ≤ 2, from le_of_dvd (by norm_num) this,
-			linarith },
+		have h0 : a a₀ m ≡ 0 [MOD 3] := mul_three_of_mul_three h m hnm,
+		have hn2 : ¬ a a₀ m ≡ 2 [MOD 3] := by { apply modeq.not_modeq_of_modeq _ _ h0; norm_num },
 		have h9 : 9 < a a₀ m, from lt_of_not_ge h9,
 		rcases term_lt_of_term_not_congr_2 hn2 h9 with ⟨m', hnm', hm'⟩,
 		use [m', le_trans hnm (le_of_lt hnm')],
@@ -563,6 +557,7 @@ begin
 		rw this },
 end
 
+/-- All numbers ≤ 9 that are congruent to 1 mod 3 -/
 lemma eq_1_4_7_of_cong_1_le_9 (x : ℕ) (h9 : x ≤ 9) (h1 : x ≡ 1 [MOD 3]) :
 	x = 1 ∨ x = 4 ∨ x = 7 :=
 begin
@@ -629,16 +624,11 @@ begin
 		rcases ih hk' with ⟨m, hnm, hm⟩,
 		by_cases h9 : a a₀ m ≤ 9,
 		{	use [m, hnm, le_trans h9 hk] },
-		have h0 : a a₀ m ≡ 1 [MOD 3],
+		have h1 : a a₀ m ≡ 1 [MOD 3],
 		{ convert h1 (m - n),
 			symmetry,
 			apply nat.add_sub_cancel' hnm },
-		have hn2 : ¬ a a₀ m ≡ 2 [MOD 3], -- this should be a lot easier
-		{	intro h,
-			have : 1 ≡ 2 [MOD 3], from modeq.trans (modeq.symm h0) h,
-			rw @modeq.modeq_iff_dvd' _ 1 2 (by norm_num) at this,
-			simp at this,
-			linarith },
+		have hn2 : ¬ a a₀ m ≡ 2 [MOD 3] := by { apply modeq.not_modeq_of_modeq _ _ h1; norm_num },
 		have h9 : 9 < a a₀ m, from lt_of_not_ge h9,
 		rcases term_lt_of_term_not_congr_2 hn2 h9 with ⟨m', hnm', hm'⟩,
 		use [m', le_trans hnm (le_of_lt hnm')],
