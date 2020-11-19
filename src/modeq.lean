@@ -7,10 +7,6 @@ import data.nat.modeq
 import data.zmod.basic
 
 namespace nat
-
-theorem pos_of_gt {a b : ℕ} (h : a < b) : 0 < b :=
-lt_of_le_of_lt (zero_le a) h
-
 namespace modeq
 
 theorem not_modeq_of_lt {a b n : ℕ} (hb : b < n) :
@@ -51,3 +47,10 @@ theorem not_modeq_of_modeq {a b c n : ℕ} (hb : b < n) (hc : c < n) (ha : a ≡
 
 end modeq
 end nat
+
+namespace zmod
+
+theorem ne_iff_not_modeq_nat {n a b : ℕ} : (↑a : zmod n) ≠ ↑b ↔ ¬ a ≡ b [MOD n] :=
+not_iff_not.mpr (eq_iff_modeq_nat n)
+
+end zmod

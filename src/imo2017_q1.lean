@@ -30,6 +30,28 @@ def a (a₀ : ℕ) : ℕ → ℕ
 	let k := sqrt (a n) in
 	if k * k = a n then k else a n + 3
 
+/- Convenience lemmas for determining the next term of the sequence -/
+lemma a_succ_of_sq {a₀ n : ℕ} (k : ℕ) (hk : k * k = a a₀ n) :
+	a a₀ (n + 1) = k :=
+begin
+	have hsq : sqrt (a a₀ n) = k := by { rw ← hk, exact sqrt_eq k },
+	simp [a],
+	split_ifs,
+	{ assumption },
+	rw hsq at h,
+	contradiction
+end
+
+lemma a_succ_of_not_sq {a₀ n : ℕ} (h : ¬ ∃ k, k * k = a a₀ n) :
+	a a₀ (n + 1) = a a₀ n + 3 :=
+begin
+	simp [a],
+	split_ifs with hsq, swap,
+	{ refl },
+	exfalso,
+	exact h ⟨sqrt (a a₀ n), hsq⟩,
+end
+
 /-- The definition of periodicity -/
 def periodic (a₀ : ℕ) : Prop :=
 	∃ A, ∀ N, ∃ M, N ≤ M ∧ a a₀ M = A
@@ -296,24 +318,11 @@ lemma first_square {a₀ n : ℕ} (h1 : ¬ a a₀ n ≡ 2 [MOD 3]) (h2 : a a₀ 
 	∀ k, n ≤ k → k < m → ¬ ∃ r, r * r = a a₀ k :=
 begin
 	intro,
-	have ht1 : t * t < a a₀ n,
-	{	simp [t],
-		apply lt_of_le_of_lt (sqrt_le _),
-		rw ←pred_eq_sub_one,
-		apply pred_lt,
-		assumption },
-	have ht2 : a a₀ n ≤ (t + 1) * (t + 1),
-	{	have : a a₀ n - 1 < (t + 1) * (t + 1), from lt_succ_sqrt _,
-		rw ←pred_eq_sub_one at this,
-		apply le_of_pred_lt this },
+	have ht1 : t * t < a a₀ n := lt_of_le_of_lt (sqrt_le _) (pred_lt h2),
+	have ht2 : a a₀ n ≤ (t + 1) * (t + 1) := le_of_pred_lt (lt_succ_sqrt _),
 	set am : zmod 3 := a a₀ n with ham,
 	set tm : zmod 3 := t with htm,
-	have hamn2 : am ≠ 2,
-	{ by_contradiction,
-		simp at h,
-		have : (↑(a a₀ n) : zmod 3) = ↑2, rw ←ham, assumption,
-		rw zmod.eq_iff_modeq_nat at this,
-		exact h1 this },
+	have hamn2 : am ≠ ↑2 := by rwa [ham, zmod.ne_iff_not_modeq_nat],
 	rcases first_square_aux ham hamn2 htm ht1 ht2 with ⟨j, i, hsq, hfirst⟩,
 	use [j, n + i, by simp],
 	have hi : ∀ k, k ≤ i → a a₀ (n + k) = a a₀ n + 3 * k,
@@ -332,7 +341,7 @@ begin
 	split,
 	{	rwa hi i (by refl) },
 	intros k hk1 hk2,
-	have hkni : k - n < i, from (nat.sub_lt_left_iff_lt_add hk1).mpr hk2,
+	have hkni : k - n < i := (nat.sub_lt_left_iff_lt_add hk1).mpr hk2,
 	have : a a₀ k = a a₀ n + 3 * (k - n),
 	{	rw ←hi (k - n) _,
 		{	rw nat.add_sub_cancel' hk1 },
@@ -404,46 +413,30 @@ lemma periodic_of_three_six_nine {a₀ n : ℕ} (h : a a₀ n = 3 ∨ a a₀ n =
 begin
 	have h9 : ∀ n, a a₀ n = 9 → a a₀ (n+1) = 3,
 	{ intros n h,
-		have hsq : sqrt (3 * 3) = 3, rw sqrt_eq 3,
-		change sqrt 9 = 3 at hsq,
-		simp [a],
-		split_ifs with h',
-		{	rwa h },
-		rw [h, hsq] at h',
-		contradiction },
+		apply a_succ_of_sq 3, rw h, refl },
 	have h6 : ∀ n, a a₀ n = 6 → a a₀ (n+1) = 9,
-	{ intros n h,
-		simp [a],
-		split_ifs with h',
-		{ rw h at h',
-			exfalso,
-			apply @no_middle_square 2 6 _ _ ⟨sqrt 6, h'⟩; norm_num },
-		rw h },
+	{	intros n h,
+		convert a_succ_of_not_sq _,
+		{	rw h },
+		rw h,
+		apply @no_middle_square 2 6; norm_num },
 	have h3 : ∀ n, a a₀ n = 3 → a a₀ (n+1) = 6,
 	{	intros n h,
-		simp [a],
-		split_ifs with h',
-		{	rw h at h',
-			exfalso,
-			apply @no_middle_square 1 3 _ _ ⟨sqrt 3, h'⟩; norm_num },
-		rw h },
-	apply @periodic_of_term_equal _ n (n + 3) (by linarith),
+		convert a_succ_of_not_sq _,
+		{ rw h},
+		rw h,
+		apply @no_middle_square 1 3; norm_num },
+	have hper : (∃ n, a a₀ n = 3) → periodic a₀,
+	{	rintro ⟨n, hn⟩,
+		apply @periodic_of_term_equal _ n (n + 3) (by linarith),
+		rw [hn, h9 _ (h6 _ (h3 _ hn))] },
 	rcases h with c3 | c6 | c9,
-	{	rw c3,
-		have : a a₀ (n+1) = 6, from h3 _ c3,
-		have : a a₀ (n+2) = 9, from h6 _ this,
-		have : a a₀ (n+3) = 3, from h9 _ this,
-		rw this },
-	{ rw c6,
-		have : a a₀ (n+1) = 9, from h6 _ c6,
+	{	exact hper ⟨n, c3⟩ },
+	{ have : a a₀ (n+1) = 9, from h6 _ c6,
 		have : a a₀ (n+2) = 3, from h9 _ this,
-		have : a a₀ (n+3) = 6, from h3 _ this,
-		rw this },
-	{ rw c9,
-		have : a a₀ (n+1) = 3, from h9 _ c9,
-		have : a a₀ (n+2) = 6, from h3 _ this,
-		have : a a₀ (n+3) = 9, from h6 _ this,
-		rw this },
+		exact hper ⟨n+2, this⟩ },
+	{ have : a a₀ (n+1) = 3, from h9 _ c9,
+		exact hper ⟨n+1, this⟩ },
 end
 
 lemma mul_three_le_9 {x : ℕ} (h9 : x ≤ 9) (h3 : 3 ∣ x) : x = 0 ∨ x = 3 ∨ x = 6 ∨ x = 9 :=
