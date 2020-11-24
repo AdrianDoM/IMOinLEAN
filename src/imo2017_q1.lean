@@ -146,7 +146,7 @@ begin
 end
 
 /-- If a term of the sequence is congruent to 2 modulo 3 then it is not periodic -/
-lemma not_periodic_of_term_cong_two (a₀ n : ℕ) (h : a a₀ n ≡ 2 [MOD 3]) :
+lemma not_periodic_of_term_cong_two {a₀ n : ℕ} (h : a a₀ n ≡ 2 [MOD 3]) :
 	¬ periodic a₀ :=
 begin
 	rintro ⟨A, hA⟩,
@@ -405,7 +405,7 @@ begin
 end
 
 /-- If aₙ ≡ 0 [MOD 3], then there is an index m > n such that aₘ = 3 -/
-lemma periodic_of_term_cong_zero (a₀ n : ℕ) (h : a a₀ n ≡ 0 [MOD 3]) (h1 : ∀ m, 1 < a a₀ m):
+lemma periodic_of_term_cong_zero {a₀ n : ℕ} (h : a a₀ n ≡ 0 [MOD 3]) (h1 : ∀ m, 1 < a a₀ m):
 	periodic a₀ :=
 begin
 	have hm9 : ∃ m, n ≤ m ∧ a a₀ m ≤ 9 :=
@@ -504,4 +504,40 @@ begin
 	apply h,
 	rcases term_cong_two_of_four_seven h47 with ⟨k, hmk, hk⟩,
 	use [k, le_of_lt (lt_of_le_of_lt hnm hmk), hk],
+end
+
+lemma all_gt_one_of_gt_one {a₀ : ℕ} (h : 1 < a₀) :
+	∀ n, 1 < a a₀ n :=
+begin
+	intro n, induction n with n ih,
+	{ assumption },
+	by_cases hsq : ∃ t, t * t = a a₀ n,
+	{ cases hsq with t ht, rw a_succ_of_sq t ht, rw ← ht at ih,
+		by_contradiction,
+		have : t * t ≤ 1 := mul_le_one (le_of_not_lt h) t.zero_le (le_of_not_lt h),
+		linarith },
+	rw a_succ_of_not_sq hsq, linarith,
+end
+
+theorem periodic_iff_mul_three (a₀ : ℕ) (h : 1 < a₀) : periodic a₀ ↔ 3 ∣ a₀ :=
+begin
+	have h1 : ∀ n, 1 < a a₀ n := all_gt_one_of_gt_one h,
+	split, swap,
+	{ intro h3, apply @periodic_of_term_cong_zero _ 0 _ h1,
+		apply modeq.symm,
+		simp [a], rw modeq.modeq_iff_dvd' (a₀.zero_le),
+		assumption },
+	intro hper,
+	have ub : a₀ % 3 < 3 := mod_lt _ (by norm_num),
+	interval_cases a₀ % 3,
+	{	exact dvd_of_mod_eq_zero h_1 },
+	{ have ha1 : a a₀ 0 ≡ 1 [MOD 3] :=
+			modeq.trans (modeq.symm $ modeq.mod_modeq _ _) (by { simp [a], rw h_1 }),
+		exfalso,
+		rcases term_cong_two_of_term_cong_one ha1 h1 with ⟨m, _, hm⟩,
+		exact not_periodic_of_term_cong_two hm hper },
+	{ have h2 : a a₀ 0 ≡ 2 [MOD 3] :=
+			modeq.trans (modeq.symm $ modeq.mod_modeq _ _) (by { simp [a], rw h_1 }),
+		exfalso,
+		exact not_periodic_of_term_cong_two h2 hper },
 end

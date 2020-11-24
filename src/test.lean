@@ -14,5 +14,3 @@ import imo2017_q1
 
 open nat
 
-
-
