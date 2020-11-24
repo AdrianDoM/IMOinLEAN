@@ -300,12 +300,12 @@ end
 
 /-- If ¬ aₙ ≡ 2 [MOD 3] and aₙ > 9 then there is an index m > n such that aₘ < aₙ -/
 lemma term_lt_of_term_congr_0_or_1 {a₀ n : ℕ} (h : a a₀ n ≡ 0 [MOD 3] ∨ a a₀ n ≡ 1 [MOD 3]) (h9 : 9 < a a₀ n) :
-	∃ m, m > n ∧ a a₀ m < a a₀ n :=
+	∃ m, n < m ∧ a a₀ m < a a₀ n :=
 begin
 	rcases first_square h (by linarith) with ⟨j, m, hnm, ham, hfirst⟩,
 	use [m + 1, by linarith],
 	rw a_succ_of_sq _ ham.symm,
-	have h9 : 9 ≤ a a₀ n - 1 := le_pred_of_lt h2,
+	have h9 : 9 ≤ a a₀ n - 1 := le_pred_of_lt h9,
 	have h3 : 3 ≤ sqrt (a a₀ n - 1) := le_sqrt.mpr h9,
 	have h2 : 2 ≤ sqrt (a a₀ n - 1) := le_of_succ_le h3,
 	calc sqrt (a a₀ n - 1) + 1 + ↑j
@@ -330,12 +330,11 @@ begin
 	have : ∀ k, a a₀ (n + k) ≡ 0 [MOD 3],
 	{ intro k,
 		induction k with k ih,
-		{	simpa },
-		rw add_succ,
-		simp [a],
+		{	exact h },
+		rw add_succ, simp [a],
 		split_ifs with hsq,
-		{	rw [←hsq, modeq.modeq_zero_iff, prime.dvd_mul] at ih,
-			{	cases ih;	{ apply modeq.modeq_zero_iff.mpr, exact ih } },
+		{	rw [← hsq, modeq.modeq_zero_iff, prime.dvd_mul] at ih,
+			{	cases ih;	{ exact modeq.modeq_zero_iff.mpr ih } },
 			norm_num },
 		rw ←add_zero 0,
 		apply modeq.modeq_add,
@@ -351,21 +350,14 @@ end
 lemma periodic_of_three_six_nine {a₀ n : ℕ} (h : a a₀ n = 3 ∨ a a₀ n = 6 ∨ a a₀ n = 9) :
 	periodic a₀ :=
 begin
-	have h9 : ∀ n, a a₀ n = 9 → a a₀ (n+1) = 3,
-	{ intros n h,
-		apply a_succ_of_sq 3, rw h, refl },
+	have h9 : ∀ n, a a₀ n = 9 → a a₀ (n+1) = 3 :=
+		λ n h, a_succ_of_sq 3 (by { rw h, refl }),
 	have h6 : ∀ n, a a₀ n = 6 → a a₀ (n+1) = 9,
-	{	intros n h,
-		convert a_succ_of_not_sq _,
-		{	rw h },
-		rw h,
-		apply @no_middle_square 6 2; norm_num },
+	{	intros n h, convert a_succ_of_not_sq _,	{	rw h },
+		rw h,	apply @no_middle_square 6 2; norm_num },
 	have h3 : ∀ n, a a₀ n = 3 → a a₀ (n+1) = 6,
-	{	intros n h,
-		convert a_succ_of_not_sq _,
-		{ rw h},
-		rw h,
-		apply @no_middle_square 3 1; norm_num },
+	{	intros n h,	convert a_succ_of_not_sq _,	{ rw h},
+		rw h,	apply @no_middle_square 3 1; norm_num },
 	have hper : (∃ n, a a₀ n = 3) → periodic a₀,
 	{	rintro ⟨n, hn⟩,
 		apply @periodic_of_term_equal _ n (n + 3) (by linarith),
@@ -379,59 +371,53 @@ begin
 		exact hper ⟨n+1, this⟩ },
 end
 
-lemma mul_three_le_9 {x : ℕ} (h9 : x ≤ 9) (h3 : 3 ∣ x) : x = 0 ∨ x = 3 ∨ x = 6 ∨ x = 9 :=
+/-- Multiples of 3 that are ≤ 9 -/
+lemma mul_three_le_nine {x : ℕ} (h9 : x ≤ 9) (h3 : 3 ∣ x) : x = 0 ∨ x = 3 ∨ x = 6 ∨ x = 9 :=
 begin
     cases h3 with k h3k,
     have : k ≤ 3 := by linarith,
     interval_cases k; dec_trivial!,
 end
 
-/-- If aₙ ≡ 0 [MOD 3], then there is an index m > n such that aₘ = 3 -/
-lemma periodic_of_term_cong_zero (a₀ n : ℕ) (h : a a₀ n ≡ 0 [MOD 3]) :
-	periodic a₀ :=
+/- The following two theorems use the fact that < on ℕ is well founded to find certain elements 
+in a set and then in the tail of the sequence a a₀ n -/
+theorem has_le_b {b : ℕ} (S : set ℕ) (hS : S.nonempty)
+	(h : ∀ x ∈ S, b < x → ∃ y ∈ S, y < x) :	∃ x ∈ S, x ≤ b :=
 begin
-	have hlt : ∀ k, 9 ≤ a a₀ n - k → ∃ m, n ≤ m ∧ a a₀ m ≤ a a₀ n - k,
-	{	intro k,
-		induction k with k ih,
-		{	intro, use [n, by refl], rw nat.sub_zero },
-		intro hk,
-		have hk' : 9 ≤ a a₀ n - k,
-		{	rw sub_succ at hk,
-			apply le_trans hk (pred_le _) },
-		rcases ih hk' with ⟨m, hnm, hm⟩,
-		by_cases h9 : a a₀ m ≤ 9,
-		{	use [m, hnm, le_trans h9 hk] },
-		have h0 : a a₀ m ≡ 0 [MOD 3] := mul_three_of_mul_three h m hnm,
-		have hn2 : ¬ a a₀ m ≡ 2 [MOD 3] := by { apply modeq.not_modeq_of_modeq _ _ h0; norm_num },
-		have h9 : 9 < a a₀ m, from lt_of_not_ge h9,
-		rcases term_lt_of_term_not_congr_2 hn2 h9 with ⟨m', hnm', hm'⟩,
-		use [m', le_trans hnm (le_of_lt hnm')],
-		rw sub_succ,
-		apply le_pred_of_lt,
-		apply lt_of_lt_of_le hm' hm	},
-	have : ∃ m, n ≤ m ∧ a a₀ m ≤ 9,
-	{	by_cases h9 : a a₀ n ≤ 9,
-		{ use [n, h9] },
-		have : a a₀ n - (a a₀ n - 9) = 9, from nat.sub_sub_self (le_of_not_le h9),
-		rcases hlt (a a₀ n - 9) (le_of_eq (eq.symm this)) with ⟨m, hnm, hm⟩,
-		rw this at hm,
-		use [m, hnm, hm] },
-	rcases this with ⟨m, hnm, hm⟩,
-	have : a a₀ m = 0 ∨ a a₀ m = 3 ∨ a a₀ m = 6 ∨ a a₀ m = 9,
-	{	apply mul_three_le_9 hm,
-		rw ←modeq.modeq_zero_iff,
-		exact mul_three_of_mul_three h m hnm },
-	cases this with h0 h369,
-	{	apply @periodic_of_term_equal _ m (m + 1) (lt_succ_self m), 
-		rw h0,
-		simp [a],
-		split_ifs,
-		{	rw h0, refl },
-		rw h0 at h_1,
-		contradiction },
-	apply periodic_of_three_six_nine h369,
+	rcases well_founded.has_min lt_wf S hS with ⟨x, xS, hx⟩,
+	use [x, xS],
+	by_contradiction hbx,
+	rcases h x xS (lt_of_not_ge hbx) with ⟨y, yS, hy⟩,
+	exact hx y yS hy,
 end
 
+theorem term_le_b {a₀ n b : ℕ}
+	(h : ∀ m, n ≤ m → b < a a₀ m → ∃ k, m < k ∧ a a₀ k < a a₀ m) :
+	∃ m, n ≤ m ∧ a a₀ m ≤ b :=
+begin
+	let S := { x | ∃ m, n ≤ m ∧ a a₀ m = x },
+	have hS : ∀ x ∈ S, b < x → ∃ y ∈ S, y < x,
+	{	rintros x ⟨m, hnm, rfl⟩ hbx,
+		rcases h m hnm hbx with ⟨k, hmk, hk⟩,
+		use [a a₀ k, ⟨k, le_trans hnm (le_of_lt hmk), rfl⟩, hk] },
+	rcases has_le_b S ⟨a a₀ n, n, le_refl n, rfl⟩  hS with ⟨x, ⟨m, hnm, rfl⟩, hxb⟩,
+	use [m, hnm, hxb],
+end
+
+/-- If aₙ ≡ 0 [MOD 3], then there is an index m > n such that aₘ = 3 -/
+lemma periodic_of_term_cong_zero (a₀ n : ℕ) (h : a a₀ n ≡ 0 [MOD 3]) (h1 : ∀ m, 1 < a a₀ m):
+	periodic a₀ :=
+begin
+	have hm9 : ∃ m, n ≤ m ∧ a a₀ m ≤ 9 :=
+		term_le_b (λ m hnm h9, term_lt_of_term_congr_0_or_1 (or.inl $ mul_three_of_mul_three h m hnm) h9),
+	rcases hm9 with ⟨m, hnm, hm⟩,
+	have hm3 : 3 ∣ a a₀ m := modeq.modeq_zero_iff.mp (mul_three_of_mul_three h m hnm),
+	cases mul_three_le_nine hm hm3 with _ h369,
+	{ have : 1 < a a₀ m := h1 m, linarith },
+	exact periodic_of_three_six_nine h369,
+end
+
+/-- There is a term congruent to 2 mod 3 whenever some term is 4 or 7 -/
 lemma term_cong_two_of_four_seven {a₀ n : ℕ} (h : a a₀ n = 4 ∨ a a₀ n = 7) :
 	∃ m, n < m ∧ a a₀ m ≡ 2 [MOD 3] :=
 begin
@@ -462,7 +448,7 @@ begin
 end
 
 /-- All numbers ≤ 9 that are congruent to 1 mod 3 -/
-lemma eq_1_4_7_of_cong_1_le_9 (x : ℕ) (h9 : x ≤ 9) (h1 : x ≡ 1 [MOD 3]) :
+lemma eq_1_4_7_of_cong_1_le_9 {x : ℕ} (h9 : x ≤ 9) (h1 : x ≡ 1 [MOD 3]) :
 	x = 1 ∨ x = 4 ∨ x = 7 :=
 begin
 	by_cases h : x < 1,
@@ -475,69 +461,47 @@ begin
 	interval_cases k; dec_trivial!,
 end
 
-/-- If aₙ ≡ 1 [MOD 3], then there is an index m > n such that aₘ ≡ 2 [MOD 3] -/
-lemma term_cong_two_of_term_cong_one (a₀ n : ℕ) (h : a a₀ n ≡ 1 [MOD 3]) :
-	∃ m, m > n ∧ a a₀ m ≡ 2 [MOD 3] :=
+lemma congr_one_or_two_of_congr_one {a₀ n : ℕ} (h : a a₀ n ≡ 1 [MOD 3]) :
+	∀ m, n ≤ m → a a₀ m ≡ 1 [MOD 3] ∨ a a₀ m ≡ 2 [MOD 3] :=
 begin
-	by_contradiction hf,
-	have h1 : ∀ k, a a₀ (n + k) ≡ 1 [MOD 3],
-	{ intro k,
-		induction k with k ih,
-		{ assumption },
+	have : ∀ k, a a₀ (n + k) ≡ 1 [MOD 3] ∨ a a₀ (n + k) ≡ 2 [MOD 3],
+	{	intro k, induction k with k ih,
+		{	left, assumption },
 		rw add_succ,
-		simp [a],
-		split_ifs with h',
-		{	apply (zmod.eq_iff_modeq_nat 3).mp,
-			set t : zmod 3 := sqrt (a a₀ (n + k)) with ht,
-			have h' : (↑(sqrt (a a₀ (n + k)) * sqrt (a a₀ (n + k))) : zmod 3) = ↑(a a₀ (n + k)),
-			{	congr, assumption },
-			simp [←ht] at h',
-			have ih : (↑(a a₀ (n + k)) : zmod 3) = ↑1,
-			{	apply (zmod.eq_iff_modeq_nat 3).mpr, assumption },
-			rw ih at h',
-			fin_cases t,
-			{	have : t * t = ↑0, rw h_1, ring,
-				have : ↑0 = ↑1, from eq.trans (eq.symm this) h',
-				rw (zmod.eq_iff_modeq_nat 3) at this,
-				have : 3 ∣ 1, from modeq.modeq_zero_iff.mp (eq.symm this),
-				have : 3 ≤ 1, from le_of_dvd (by norm_num) this,
-				contradiction },
-			{ assumption },
-			{	dsimp at h_1,
-				have : a a₀ (n + k).succ = sqrt (a a₀ (n + k)),	{	simp [a], split_ifs, refl },
-				have : t = ↑(a a₀ (n + k).succ), { rw this },
-				exfalso,
-				apply hf ⟨(n + k).succ, _, _⟩,
-				{ apply lt_of_lt_of_le (lt_succ_self n),
-					apply succ_le_succ,
-					linarith },
-				rw ←(zmod.eq_iff_modeq_nat 3),
-				rwa ←this } },
-		rw ←(zmod.eq_iff_modeq_nat 3),
-		simp,
-		rw ←(zmod.eq_iff_modeq_nat 3) at ih,
-		assumption },
-	have hlt : ∀ k, 9 ≤ a a₀ n - k → ∃ m, n ≤ m ∧ a a₀ m ≤ a a₀ n - k,
-	{ intro k,
-		induction k with k ih,
-		{	intro, use [n, le_refl n, by refl] },
-		intro hk,
-		have hk' : 9 ≤ a a₀ n - k,
-		{	rw sub_succ at hk,
-			apply le_trans hk (pred_le _) },
-		rcases ih hk' with ⟨m, hnm, hm⟩,
-		by_cases h9 : a a₀ m ≤ 9,
-		{	use [m, hnm, le_trans h9 hk] },
-		have h1 : a a₀ m ≡ 1 [MOD 3],
-		{ convert h1 (m - n),
-			symmetry,
-			apply nat.add_sub_cancel' hnm },
-		have hn2 : ¬ a a₀ m ≡ 2 [MOD 3] := by { apply modeq.not_modeq_of_modeq _ _ h1; norm_num },
-		have h9 : 9 < a a₀ m, from lt_of_not_ge h9,
-		rcases term_lt_of_term_not_congr_2 hn2 h9 with ⟨m', hnm', hm'⟩,
-		use [m', le_trans hnm (le_of_lt hnm')],
-		rw sub_succ,
-		apply le_pred_of_lt,
-		apply lt_of_lt_of_le hm' hm },
-	sorry
+		cases ih with h1 h2,
+		{	by_cases hsq : ∃ t, t * t = a a₀ (n + k),
+			{	cases hsq with t ht,
+				rw a_succ_of_sq t ht,
+				rw ← ht at h1,
+				have h12 : ↑t = ↑1 ∨ ↑t = ↑2 := @zmod.one_or_two_of_sq_eq_one ↑t _, swap,
+				{	convert (zmod.eq_iff_modeq_nat 3).mpr h1, norm_cast },
+				cases h12 with h1 h2,
+				{	left, exact (zmod.eq_iff_modeq_nat 3).mp h1 },
+				{ right, exact (zmod.eq_iff_modeq_nat 3).mp h2 } },
+			rw a_succ_of_not_sq hsq,
+			left, exact modeq.trans (modeq.modeq_add_mul_mod 1) h1 },
+		right, rw increasing_of_term_cong_two h2 1,
+		exact modeq.trans (modeq.modeq_add_mul_mod 1) h2 },
+	intros m hnm,
+	convert this (m - n);	{ rw nat.add_sub_cancel' hnm }
+end
+
+/-- If aₙ ≡ 1 [MOD 3], then there is an index m > n such that aₘ ≡ 2 [MOD 3] -/
+lemma term_cong_two_of_term_cong_one {a₀ n : ℕ} (hn1 : a a₀ n ≡ 1 [MOD 3]) (h1 : ∀ m, 1 < a a₀ m) :
+	∃ m, n ≤ m ∧ a a₀ m ≡ 2 [MOD 3] :=
+begin
+	by_contradiction,
+	have hm1 : ∀ m, n ≤ m → a a₀ m ≡ 1 [MOD 3],
+	{	intros m hnm,
+		cases congr_one_or_two_of_congr_one hn1 m hnm with hm1 hm2,
+		{ assumption },
+		{ exfalso, exact h ⟨m, hnm, hm2⟩ } },
+	have hm9 : ∃ m, n ≤ m ∧ a a₀ m ≤ 9 :=
+		term_le_b (λ m hnm h9, term_lt_of_term_congr_0_or_1 (or.inr $ hm1 m hnm) h9),
+	rcases hm9 with ⟨m, hnm, hm⟩,
+	cases eq_1_4_7_of_cong_1_le_9 hm (hm1 m hnm) with _ h47,
+	{ have : 1 < a a₀ m := h1 m, linarith },
+	apply h,
+	rcases term_cong_two_of_four_seven h47 with ⟨k, hmk, hk⟩,
+	use [k, le_of_lt (lt_of_le_of_lt hnm hmk), hk],
 end
