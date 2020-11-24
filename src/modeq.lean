@@ -7,13 +7,6 @@ import data.nat.modeq
 import data.zmod.basic
 
 namespace nat
-
-lemma sqrt_pred_lt (n : ℕ) (h : n ≠ 0) :
-	sqrt (n - 1) * sqrt (n - 1) < n := lt_of_le_of_lt (sqrt_le _) (pred_lt h)
-
-lemma le_succ_sqrt_pred (n : ℕ) (h : n ≠ 0) :
-	n ≤ (sqrt (n - 1) + 1) * (sqrt (n - 1) + 1) := le_of_pred_lt (lt_succ_sqrt _)
-
 namespace modeq
 
 theorem not_modeq_of_lt {a b n : ℕ} (hb : b < n) :

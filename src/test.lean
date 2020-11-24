@@ -51,7 +51,20 @@ begin
 	exact h ⟨sqrt (a a₀ n), hsq⟩,
 end
 
-#check lt_wf
+theorem a_no_squares {a₀ n k : ℕ} (h : ∀ i, i < k → ¬ ∃ t, t * t = a a₀ n + 3 * i) :
+	∀ i, i ≤ k → a a₀ (n + i) = a a₀ n + 3 * i :=
+begin
+	induction k with k ih,
+	{ intros i hik, rw le_zero_iff.mp hik, refl },
+	intros i hik,
+	have hk : ∀ i, i ≤ k → a a₀ (n + i) = a a₀ n + 3 * i :=
+		ih (λ i hik, h i (lt_trans hik $ lt_succ_self k)),
+	by_cases hi : i = k.succ, swap,
+	{	exact hk i (le_of_lt_succ (lt_of_le_of_ne hik hi)) },
+	rw [hi, add_succ, a_succ_of_not_sq _], swap,
+	{	rw hk k (le_refl k), exact h k (lt_succ_self k) },
+	rw [hk k (le_refl k), add_assoc, mul_succ],
+end
 
 theorem has_le_b {b : ℕ} (S : set ℕ) (hS : S.nonempty)
 	(h : ∀ x ∈ S, b < x → ∃ y ∈ S, y < x) :	∃ x ∈ S, x ≤ b :=
@@ -105,110 +118,23 @@ end
 lemma first_square_aux {b : ℕ} (hpos : b ≠ 0) (hb : b ≡ 0 [MOD 3] ∨ b ≡ 1 [MOD 3]) :
 	let t := sqrt (b - 1) in
 	∃ (j : fin 3) n, b + 3 * n = (t + 1 + j) * (t + 1 + j) ∧
-	∀ k, k < n → ¬ ∃ r, r * r = b + 3 * k :=
+	∀ k, k < n → ¬ ∃ r, r * r = b + 3 * k := sorry
+
+#check nat.sub_lt_left_iff_lt_add 
+
+/-- If ¬ aₙ ≡ 2 [MOD 3] and aₙ > 9 then the next perfect square in the sequence is one of
+t², (t+1)² or (t+2)², where t is the largest natural number such that t² ≤ aₙ -/
+lemma first_square {a₀ n : ℕ} (h1 : a a₀ n ≡ 0 [MOD 3] ∨ a a₀ n ≡ 1 [MOD 3]) (h2 : a a₀ n ≠ 0) :
+	let t := sqrt (a a₀ n - 1) in
+	∃ (j : fin 3) m, n ≤ m ∧ a a₀ m = (t + 1 + j) * (t + 1 + j) ∧
+	∀ k, n ≤ k → k < m → ¬ ∃ r, r * r = a a₀ k :=
 begin
-	intro t,
-	have htb : t * t < b := sqrt_pred_lt b hpos,
-	have hbt : ∀ j : fin 3, b ≤ (t + 1 + j) * (t + 1 + j) := λ j, le_trans (le_succ_sqrt_pred b hpos) _, swap,
-	{	simp [← t], apply nat.mul_self_le_mul_self, fin_cases j; simp },
-	cases hb with h0 h1,
-	{	let tm : zmod 3 := t,
-		fin_cases tm,
-		{	-- Case : b ≡ 0 and t ≡ 0 [MOD 3]
-			have ht1 : (↑1 : zmod 3) = ↑((t + 1) * (t + 1)) := by simp [← tm, h],
-			have ht2 : (↑1 : zmod 3) = ↑((t + 2) * (t + 2)) := by { simp [← tm, h], ring },
-			have ht3 : (↑0 : zmod 3) = ↑((t + 3) * (t + 3)) := by simp [← tm, h],
-			rcases modeq.add_mul_mod_of_modeq (hbt 2) (modeq.trans h0 _) with ⟨n, hn⟩, swap,
-			{	rwa ← zmod.eq_iff_modeq_nat 3 },
-		  use [2, n, hn],
-			change b + 3 * n = (t + 3) * (t + 3) at hn,
-			intros k hkn hsq,
-			-- Show that (t + 3)² is the first square by eliminating the intermediate ones
-			rcases @middle_squares _ t 3 _ _ hsq with ⟨r, hlr, hr⟩, swap,
-			{ linarith }, swap,
-			{ rw ← hn, linarith },
-			interval_cases r,
-			{	linarith },
-			{ apply @modeq.not_modeq_of_lt 0 1 3 (by norm_num) (by norm_num),
-				apply modeq.trans (modeq.trans h0.symm $ modeq.modeq_add_mul_mod k),
-				apply modeq.trans _ ((zmod.eq_iff_modeq_nat 3).mp ht1).symm,
-				rwa hr },
-			{	apply @modeq.not_modeq_of_lt 0 1 3 (by norm_num) (by norm_num),
-				apply modeq.trans (modeq.trans h0.symm $ modeq.modeq_add_mul_mod k),
-				apply modeq.trans _ ((zmod.eq_iff_modeq_nat 3).mp ht2).symm,
-				rwa hr },
-			{ rw ← hn at hr, linarith } },
-		{	-- Case : b ≡ 0 and t ≡ 1 [MOD 3]
-			have ht1 : (↑1 : zmod 3) = ↑((t + 1) * (t + 1)) := by { simp [← tm, h], ring },
-			have ht2 : (↑0 : zmod 3) = ↑((t + 2) * (t + 2)) := by { simp [← tm, h], ring },
-			rcases modeq.add_mul_mod_of_modeq (hbt 1) (modeq.trans h0 _) with ⟨n, hn⟩, swap,
-			{	rwa ← zmod.eq_iff_modeq_nat 3 },
-			use [1, n, hn],
-			change b + 3 * n = (t + 2) * (t + 2) at hn,
-			intros k hkn hsq,
-			-- Show that (t + 2)² by eliminating the previous one
-			rcases @middle_squares _ t 2 _ _ hsq with ⟨r, hlr, hr⟩, swap,
-			{	linarith }, swap,
-			{ rw ← hn, linarith },
-			interval_cases r,
-			{ linarith },
-			{ apply @modeq.not_modeq_of_lt 0 1 3 (by norm_num) (by norm_num),
-				apply modeq.trans (modeq.trans h0.symm $ modeq.modeq_add_mul_mod k),
-				apply modeq.trans _ ((zmod.eq_iff_modeq_nat 3).mp ht1).symm,
-				rwa hr },
-			{ rw ← hn at hr, linarith } },
-		{	-- Case : b ≡ 0 and t ≡ 2 [MOD 3]
-			have ht1 : (↑0 : zmod 3) = ↑((t + 1) * (t + 1)) := by { simp [← tm, h], ring },
-			rcases modeq.add_mul_mod_of_modeq (hbt 0) (modeq.trans h0 _) with ⟨n, hn⟩, swap,
-			{ rwa ← zmod.eq_iff_modeq_nat 3 },
-			use [0, n, hn],
-			change b + 3 * n = (t + 1) * (t + 1) at hn,
-			intros k hkn,
-			-- There is no possible square before it, so (t + 1)² must be the first
-			apply no_middle_square (lt_of_lt_of_le htb _),
-			{	rw ← hn, linarith },
-			linarith } },
-	{	let tm : zmod 3 := t,
-		fin_cases tm,
-		{	-- Case : b ≡ 1 and t ≡ 0 [MOD 3]
-			have ht1 : (↑1 : zmod 3) = ↑((t + 1) * (t + 1)) := by { simp [← tm, h] },
-			rcases modeq.add_mul_mod_of_modeq (hbt 0) (modeq.trans h1 _) with ⟨n, hn⟩, swap,
-			{	rwa ← zmod.eq_iff_modeq_nat 3 },
-			use [0, n, hn],
-			change b + 3 * n = (t + 1) * (t + 1) at hn,
-			intros k hkn,
-			-- There is no possible square before it, so (t + 1)² must be the first
-			apply no_middle_square (lt_of_lt_of_le htb _),
-			{	rw ← hn, linarith },
-			linarith },
-		{ -- Case : b ≡ 1 and t ≡ 1 [MOD 3]
-			have ht1 : (↑1 : zmod 3) = ↑((t + 1) * (t + 1)) := by { simp [← tm, h], ring },
-			rcases modeq.add_mul_mod_of_modeq (hbt 0) (modeq.trans h1 _) with ⟨n, hn⟩, swap,
-			{	rwa ← zmod.eq_iff_modeq_nat 3 },
-			use [0, n, hn],
-			change b + 3 * n = (t + 1) * (t + 1) at hn,
-			intros k hkn,
-			-- There is no possible square before it, so (t + 1)² must be the first
-			apply no_middle_square (lt_of_lt_of_le htb _),
-			{	rw ← hn, linarith },
-			linarith },
-		{ -- Case : b ≡ 1 and t ≡ 2 [MOD 3]
-			have ht1 : (↑0 : zmod 3) = ↑((t + 1) * (t + 1)) := by { simp [← tm, h], ring },
-			have ht2 : (↑1 : zmod 3) = ↑((t + 2) * (t + 2)) := by { simp [← tm, h], ring },
-			rcases modeq.add_mul_mod_of_modeq (hbt 1) (modeq.trans h1 _) with ⟨n, hn⟩, swap,
-			{	rwa ← zmod.eq_iff_modeq_nat 3 },
-			use [1, n, hn],
-			change b + 3 * n = (t + 2) * (t + 2) at hn,
-			intros k hkn hsq,
-			-- Show that (t + 2)² by eliminating the previous one
-			rcases @middle_squares _ t 2 _ _ hsq with ⟨r, hlr, hr⟩, swap,
-			{	linarith }, swap,
-			{ rw ← hn, linarith },
-			interval_cases r,
-			{ linarith },
-			{ apply @modeq.not_modeq_of_lt 0 1 3 (by norm_num) (by norm_num),
-				apply modeq.trans ((zmod.eq_iff_modeq_nat 3).mp ht1),
-				apply modeq.trans _ (modeq.trans (modeq.modeq_add_mul_mod k).symm h1),
-				rwa hr },
-			{ rw ← hn at hr, linarith }	} },
+	rcases first_square_aux h2 h1 with ⟨j, k, hsq, hfirst⟩,
+	have hk : ∀ i, i ≤ k → a a₀ (n + i) = a a₀ n + 3 * i := a_no_squares hfirst,
+	use [j, n + k, by linarith], split,
+	{ rw ← hsq, exact hk k (le_refl k) },
+	intros m hnm hmnk,
+	have hm : m - n < k := (nat.sub_lt_left_iff_lt_add hnm).mpr hmnk,
+	rw [← nat.add_sub_cancel' hnm, hk (m - n) (le_of_lt hm)],
+	exact hfirst (m - n) hm,
 end
