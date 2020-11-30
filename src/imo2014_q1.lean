@@ -28,28 +28,33 @@ constant hinc : ∀ n, a n < a (n + 1)
 def d (n : ℕ+) : ℤ := ∑ i : fin (n + 1), a i - n * (a n)
 
 lemma first_ineq_iff {n : ℕ+} :
-	(a n : ℚ) < (∑ i : fin (n + 1), a i) / n ↔ 0 < d n :=
+	(a n : ℚ) < (↑∑ i : fin (n + 1), a i : ℚ) / n ↔ 0 < d n :=
 begin
-	sorry,
-	-- split,
-	-- {	intro h, simp [d],
-	-- 	apply nat.sub_pos_of_lt,
-	-- 	have : (a n : ℚ) * n < (∑ (i : fin (n + 1)), a i),
-	-- 	{ rw ← rat.mul_one (a n : ℚ) at h,
-	-- 		change ↑(a ↑n) / ↑1 < (∑ (i : fin (↑n + 1)), ↑(a ↑i)) / ↑n at h,
-	-- 		rw [rat.div_lt_div_iff_mul_lt_mul _ _] at h,
-	-- 		norm_cast at h,
-	-- 		apply (rat.div_lt_div_iff_mul_lt_mul _ _).mp,} }
+	have : (↑(a n) : ℚ) = ↑(a n) / ↑(1 : ℤ) := by simp,
+	change _ < _ / ↑(n : ℤ) ↔ _,
+	rw [this, rat.div_lt_div_iff_mul_lt_mul], swap,
+	{ norm_num }, swap,
+	{ norm_cast, have : 1 ≤ ↑n := pnat.one_le n, linarith },
+	simp [d], rw mul_comm
 end
 
 lemma second_ineq_iff {n : ℕ+} :
-	((∑ i : fin (n + 1), a i) : ℚ) / n ≤ a (n + 1) ↔ d (n + 1) ≤ 0 :=
+	(↑∑ i : fin (n + 1), a i : ℚ) / n ≤ a (n + 1) ↔ d (n + 1) ≤ 0 :=
 begin
-	sorry
+	have : (↑(a (n + 1)) : ℚ) = ↑(a (n + 1)) / ↑(1 : ℤ) := by simp,
+	change _ / ↑(n : ℤ) ≤ _ ↔ _, rw this,
+	simp [rat.div_num_denom],
+	rw rat.le_def, swap,
+	{	norm_cast, have : 1 ≤ ↑n := pnat.one_le n, linarith }, swap,
+	{ norm_num },
+	simp [d, @fin.sum_univ_cast_succ _ _ ↑(n + 1)],
+	rw [add_mul, one_mul],
+	simp,	rw mul_comm, refl,
 end
 
 lemma ineq_iff {n : ℕ+} :
-	(a n : ℚ) < (∑ i : fin (n + 1), a i) / n ∧ ((∑ i : fin (n + 1), a i) : ℚ) / n ≤ a (n + 1)
+	(a n : ℚ) < (↑∑ i : fin (n + 1), a i : ℚ) / n ∧
+	(↑∑ i : fin (n + 1), a i : ℚ) / n ≤ a (n + 1)
 	↔ 0 < d n ∧ d (n + 1) ≤ 0 :=
 ⟨λ h, ⟨first_ineq_iff.1 h.1, second_ineq_iff.1 h.2⟩,
 	λ h, ⟨first_ineq_iff.2 h.1, second_ineq_iff.2 h.2⟩⟩
@@ -152,8 +157,8 @@ begin
 end
 
 theorem unique_n : ∃! n : ℕ+, 
-	(a n : ℚ) < (∑ i : fin (n + 1), a i) / n ∧
-	((∑ i : fin (n + 1), a i) : ℚ) / n ≤ a (n + 1) :=
+	(a n : ℚ) < (↑∑ i : fin (n + 1), a i) / n ∧
+	(↑∑ i : fin (n + 1), a i : ℚ) / n ≤ a (n + 1) :=
 begin
 	rcases cross_of_des ddes 0 1 _ with ⟨n, _, hn⟩, swap,
 	{	rw d_one, exact hpos 0 },
