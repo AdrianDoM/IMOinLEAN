@@ -105,10 +105,38 @@ begin
 	rw h at fn1m, linarith,
 end
 
+lemma term_le_of_des {f : ℕ+ → ℤ} (hdes : ∀ n, f (n + 1) < f n) (x : ℤ) (m : ℕ+) (hx : x < f m) :
+	∃ k, f (m + ⟨k + 1, by linarith⟩) ≤ x :=
+begin
+	have : ∀ d, f (m + ⟨d + 1, by linarith⟩) < f m - d,
+	{	intro d, induction d with d ih,
+		{ simp, exact hdes m },
+		simp [sub_add_eq_sub_sub],
+		apply lt_of_lt_of_le _ (int.le_sub_one_of_lt ih),
+		change f (m + ⟨d + 1, by linarith⟩ + 1) < _,
+		exact hdes _ },
+	cases int.eq_coe_of_zero_le (le_of_lt $ sub_pos_of_lt hx) with k hk,
+	use k,
+	apply le_trans (le_of_lt $ this k),
+	linarith,
+end 
+
 theorem cross_of_des {f : ℕ+ → ℤ} (hdes : ∀ n, f (n + 1) < f n) (x : ℤ) (m : ℕ+) (hx : x < f m) :
 	∃ n, m ≤ n ∧ x < f n ∧ f (n + 1) ≤ x :=
 begin
-	sorry
+	let S := { k : ℕ | f (m + ⟨k + 1, by linarith⟩) ≤ x },
+	rcases well_founded.has_min nat.lt_wf S (term_le_of_des hdes x m hx) with ⟨k, hk, hmin⟩,
+	use m + k,
+	{ have : 1 ≤ ↑m := pnat.one_le m, linarith },
+	split, { rw ← pnat.coe_le_coe, simp },
+	split, swap, { exact hk },
+	by_contradiction h,
+	by_cases h1k : 1 ≤ k, swap,
+	{	have : k = 0 := by linarith, simp [this] at h, linarith },
+	apply (hmin (k - 1) _) _, swap,
+	{	apply nat.sub_lt, linarith, norm_num },
+	simp [nat.sub_add_cancel h1k],
+	exact (le_of_not_gt h),
 end
 
 theorem unique_cross_of_des {f : ℕ+ → ℤ} (hdes : ∀ n, f (n + 1) < f n) (x : ℤ) (n : ℕ+)
