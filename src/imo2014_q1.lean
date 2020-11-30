@@ -70,54 +70,66 @@ begin
 				= ((∑ i : fin (n + 2), a i) - (n + 1) * (a (n + 1)))
 					- ((∑ i : fin (n + 1), a i) - n * (a n))                       : rfl
 		... = ((∑ i : fin (n + 1), a i) + a (n + 1) - (n + 1) * (a (n + 1)))
-					- ((∑ i : fin (n + 1), a i) - n * (a n))                       : sorry
+					- ((∑ i : fin (n + 1), a i) - n * (a n))                       : by simp [fin.sum_univ_cast_succ]
 		... = a (n + 1) - (n + 1) * (a (n + 1)) + n * (a n)                  : by ring
 		... = n * (a n - a (n + 1))                                          : by ring
 		... < 0                                                              : this,
 	linarith,
 end
 
-theorem cross_of_des {f : ℕ+ → ℤ} (hdes : ∀ n, f (n + 1) < f n) (x : ℤ) (hx : x < f 1) :
-	∃ n, x < f n ∧ f (n + 1) ≤ x :=
+theorem lt_of_lt_of_des {f : ℕ+ → ℤ} (hdes : ∀ n, f (n + 1) < f n) {n m : ℕ+} (hnm : n < m) :
+	f m < f n :=
 begin
-	have h : ∀ k : ℕ, f ⟨2 + k, by linarith⟩ < f 1 - k,
+	have : ∀ k : ℕ, f (n + ⟨k + 1, by linarith⟩) < f n,
 	{	intro k, induction k with k ih,
-		{ simp, exact hdes 1 },
-		change f ⟨2 + (k + 1), _⟩ < f 1 - (k + 1),
-		have : 2 + (k + 1) = 2 + k + 1 := by rw add_assoc,
-		simp [this, sub_add_eq_sub_sub],
-		apply lt_of_lt_of_le (hdes ⟨2 + k, by linarith⟩),
-		linarith },
-	have : ∃ n, f (n + 1) ≤ x,
-	{	have : 0 < 2 + (f 1 - x) := by linarith,
-		cases pnat.from_int this with n hn,
-		use n,
-		apply le_trans (le_of_lt (hdes n)),
-		apply le_of_lt,
-		have : 0 ≤ f 1 - x := by linarith,
-		cases int.eq_coe_of_zero_le this with m hm,
-		convert h m,
-		{ apply pnat.eq, simp,
-			rw [← int.coe_nat_eq_coe_nat_iff, int.coe_nat_add, ← hm],
-			norm_cast, simp [hn] },
-		linarith },
-	sorry,
+		{ exact hdes n },
+		apply lt_trans _ ih,
+		change f (n + ⟨k + 1, by linarith⟩ + 1) < _,
+		exact hdes _ },
+	convert this (↑(m - n) - 1),
+	have : 1 ≤ ↑(m - n) := (pnat.coe_le_coe 1 _).mpr (pnat.one_le _),
+	simp [nat.sub_add_cancel this],
+	rw pnat.add_sub_of_lt hnm,
+end
+
+theorem no_middle_term {f : ℕ+ → ℤ} (hdes : ∀ n, f (n + 1) < f n) (n : ℕ+) :
+	¬ ∃ m, f (n + 1) < f m ∧ f m < f n :=
+begin
+	rintro ⟨m, fn1m, fmn⟩,
+	rcases lt_trichotomy m n with hmn | heq | hnm,
+	{ linarith [lt_of_lt_of_des hdes hmn] },
+	{ rw heq at fmn, linarith },
+	by_cases h : n + 1 < m,
+	{	linarith [lt_of_lt_of_des hdes h] },
+	have h : m = n + 1 := le_antisymm (le_of_not_gt h) (nat.succ_le_of_lt hnm),
+	rw h at fn1m, linarith,
+end
+
+theorem cross_of_des {f : ℕ+ → ℤ} (hdes : ∀ n, f (n + 1) < f n) (x : ℤ) (m : ℕ+) (hx : x < f m) :
+	∃ n, m ≤ n ∧ x < f n ∧ f (n + 1) ≤ x :=
+begin
+	sorry
 end
 
 theorem unique_cross_of_des {f : ℕ+ → ℤ} (hdes : ∀ n, f (n + 1) < f n) (x : ℤ) (n : ℕ+)
 	(hcross : x < f n ∧ f (n + 1) ≤ x) : ∀ m, x < f m ∧ f (m + 1) ≤ x → m = n :=
 begin
-	sorry
+	intros m hm,
+	have : ∀ {n m}, f (n + 1) ≤ x → x < f m → m ≤ n,
+	{ intros n m hfn1 hfm, by_contradiction hnm,
+		have h1 : f (n + 1) < f m := lt_of_le_of_lt hfn1 hfm,
+	  have h2 : f m < f n := lt_of_lt_of_des hdes (lt_of_not_ge hnm),
+		exact no_middle_term hdes n ⟨m, h1, h2⟩ },
+	exact le_antisymm (this hcross.2 hm.1) (this hm.2 hcross.1),
 end
 
 theorem unique_n : ∃! n : ℕ+, 
 	(a n : ℚ) < (∑ i : fin (n + 1), a i) / n ∧
 	((∑ i : fin (n + 1), a i) : ℚ) / n ≤ a (n + 1) :=
 begin
-	cases cross_of_des ddes 0 _ with n hn, swap,
+	rcases cross_of_des ddes 0 1 _ with ⟨n, _, hn⟩, swap,
 	{	rw d_one, exact hpos 0 },
-	have h : _ := ineq_iff.mpr hn,
-	use [n, h],
+	use [n, ineq_iff.mpr hn],
 	have huniq : _ := unique_cross_of_des ddes 0 n hn,
 	intros m hm,
 	exact huniq m (ineq_iff.mp hm),
