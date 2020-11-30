@@ -1,5 +1,5 @@
-# IMO2017inLEAN
-An attempt at formalising the 6 problems in the 2017 International Mathematical Olympiad in the [LEAN](https://leanprover.github.io/) interactive theorem prover.
+# IMOinLEAN
+A repository in construction of formalised solutions to International Mathematical Olympiad problems in the [LEAN](https://leanprover.github.io/) interactive theorem prover.
 
 Script: https://www.imo-official.org/problems.aspx (2017, select English and click download.)
 
