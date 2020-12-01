@@ -45,7 +45,7 @@ by { convert sol_mul_eq_zero hf 0 (by norm_num), simp [pow_two] }
 
 theorem zero_of_zero_at_zero {f : ℝ → ℝ} (hf : sol f) (h0 : f 0 = 0) : f = λ _, 0 :=
 begin
-	ext,
+	ext x,
 	calc f x
 			= f (f x * f 0) + f (x + 0) : by simp [h0]
 	... = f 0                       : by rw [hf, mul_zero]

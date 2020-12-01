@@ -35,7 +35,7 @@ def a (a₀ : ℕ) : ℕ → ℕ
 lemma a_succ_of_sq {a₀ n : ℕ} (k : ℕ) (hk : k * k = a a₀ n) :
 	a a₀ (n + 1) = k :=
 begin
-	have hsq : sqrt (a a₀ n) = k := by { rw ← hk, exact sqrt_eq k },
+	have hsq : sqrt (a a₀ n) = k := by rw [← hk, sqrt_eq k],
 	simp [a],
 	split_ifs,
 	{ assumption },
@@ -53,7 +53,7 @@ begin
 	exact h ⟨sqrt (a a₀ n), hsq⟩,
 end
 
-/- Convenience lemma for determine terms of the sequence in a run of not squares -/
+/- Convenience lemma to determine terms of the sequence in a run of not squares -/
 lemma a_no_squares {a₀ n k : ℕ} (h : ∀ i, i < k → ¬ ∃ t, t * t = a a₀ n + 3 * i) :
 	∀ i, i ≤ k → a a₀ (n + i) = a a₀ n + 3 * i :=
 begin
@@ -125,7 +125,7 @@ lemma not_square_of_two_mod_three {n : ℕ} (h : n ≡ 2 [MOD 3]) :
 	¬∃ m, m * m = n :=
 begin
   rintro ⟨m, rfl⟩,
-	have : ¬∃ (m : zmod 3), m * m = 2, dec_trivial,
+	have : ¬∃ (m : zmod 3), m * m = 2 := by dec_trivial,
   apply this,
   use m,
   norm_cast,
