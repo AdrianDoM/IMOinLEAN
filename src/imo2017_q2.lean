@@ -79,21 +79,12 @@ begin
 	have haddn : ∀ x (n : ℕ), f (x + n) = f x + n,
 	{ intros x n, induction n with n ih, { simp },
 		simp, rw [← add_assoc, hadd1, ih, add_assoc] },
-	have hsub1 : ∀ x, f (x - 1) = f x - 1 :=
-		λ x,
-		calc f (x - 1)
-				= f (x - 1) + 1 - 1 : by rw add_sub_cancel
-		... = f (x - 1 + 1) - 1 : by rw hadd1
-		... = f x - 1           : by rw sub_add_cancel,
-	have hsubn : ∀ x (n : ℕ), f (x - n) = f x - n,
-	{	intros x n, induction n with n ih, { simp },
-		simp, rw [← sub_sub, hsub1, ih, sub_sub] },
-	intros x n, induction n with n,
-	{ simp, exact haddn x n },
-	induction n with n ih,
-	{	simp, exact hsub1 x },
-	simp, convert hsubn x (n + 2),
-	repeat { rw [nat.cast_add, neg_add], simp [← sub_eq_add_neg], ring },
+	intros x n,
+	cases n with n n,
+	{	exact haddn x n },
+	dsimp,
+	rw [← sub_eq_add_neg, ← sub_eq_add_neg, eq_sub_iff_add_eq],
+	convert (haddn _ (n + 1)).symm, simp,
 end
 
 lemma root_of_nonneg_disc {a b : ℝ} (h : 0 ≤ a * a - 4 * b) :
