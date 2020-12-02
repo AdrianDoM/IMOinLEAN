@@ -9,7 +9,6 @@ import data.zmod.basic
 import tactic
 
 import modeq
-import sqrt
 
 open nat
 
@@ -169,6 +168,22 @@ begin
 	linarith, 
 end
 
+/-- All perfect squares between a² and (a + b)² are of the form (a + k)² for some k ≤ b -/
+lemma middle_squares {n a b : ℕ} (hl : a * a ≤ n) (hr : n ≤ (a + b) * (a + b)) :
+	(∃ t, t * t = n) → ∃ k, k ≤ b ∧ (a + k) * (a + k) = n :=
+begin
+	intro hsq,
+	induction b with b ih,
+	{	use [0, le_refl 0], linarith },
+	by_cases h1 : n ≤ (a + b) * (a + b),
+	{	rcases ih h1 with ⟨k, hkb, hk⟩,
+		use [k, le_succ_of_le hkb, hk] },
+	by_cases h2 : n < (a + b.succ) * (a + b.succ),
+	{	exfalso, exact not_exists_sq (lt_of_not_ge h1) h2 hsq },
+	use [b.succ, le_refl _],
+	linarith,
+end
+
 /- This long lemma takes care of each possibility for b and t mod 3. -/
 lemma first_square_aux {b : ℕ} (hpos : b ≠ 0) (hb : b ≡ 0 [MOD 3] ∨ b ≡ 1 [MOD 3]) :
 	let t := sqrt (b - 1) in
@@ -176,9 +191,10 @@ lemma first_square_aux {b : ℕ} (hpos : b ≠ 0) (hb : b ≡ 0 [MOD 3] ∨ b �
 	∀ k, k < n → ¬ ∃ r, r * r = b + 3 * k :=
 begin
 	intro t,
-	have htb : t * t < b := sqrt_pred_lt b hpos,
-	have hbt : ∀ j : fin 3, b ≤ (t + 1 + j) * (t + 1 + j) := λ j, le_trans (le_succ_sqrt_pred b hpos) _, swap,
-	{	simp [← t], apply nat.mul_self_le_mul_self, fin_cases j; simp },
+	have htb : t * t < b := lt_of_le_of_lt (sqrt_le _) (pred_lt hpos),
+	have hbt : ∀ j : fin 3, b ≤ (t + 1 + j) * (t + 1 + j) :=
+		λ j, le_trans (le_of_pred_lt $ lt_succ_sqrt (b - 1)) _, swap,
+	{	simp [pred_eq_sub_one, ← t], apply nat.mul_self_le_mul_self, simp },
 	cases hb with h0 h1,
 	{	let tm : zmod 3 := t,
 		fin_cases tm,
@@ -233,7 +249,7 @@ begin
 			change b + 3 * n = (t + 1) * (t + 1) at hn,
 			intros k hkn,
 			-- There is no possible square before it, so (t + 1)² must be the first
-			apply no_middle_square (lt_of_lt_of_le htb _),
+			apply not_exists_sq (lt_of_lt_of_le htb _),
 			{	rw ← hn, linarith },
 			linarith } },
 	{	let tm : zmod 3 := t,
@@ -246,7 +262,7 @@ begin
 			change b + 3 * n = (t + 1) * (t + 1) at hn,
 			intros k hkn,
 			-- There is no possible square before it, so (t + 1)² must be the first
-			apply no_middle_square (lt_of_lt_of_le htb _),
+			apply not_exists_sq (lt_of_lt_of_le htb _),
 			{	rw ← hn, linarith },
 			linarith },
 		{ -- Case : b ≡ 1 and t ≡ 1 [MOD 3]
@@ -257,7 +273,7 @@ begin
 			change b + 3 * n = (t + 1) * (t + 1) at hn,
 			intros k hkn,
 			-- There is no possible square before it, so (t + 1)² must be the first
-			apply no_middle_square (lt_of_lt_of_le htb _),
+			apply not_exists_sq (lt_of_lt_of_le htb _),
 			{	rw ← hn, linarith },
 			linarith },
 		{ -- Case : b ≡ 1 and t ≡ 2 [MOD 3]
@@ -354,10 +370,10 @@ begin
 		λ n h, a_succ_of_sq 3 (by { rw h, refl }),
 	have h6 : ∀ n, a a₀ n = 6 → a a₀ (n+1) = 9,
 	{	intros n h, convert a_succ_of_not_sq _,	{	rw h },
-		rw h,	apply @no_middle_square 6 2; norm_num },
+		rw h,	apply @not_exists_sq 6 2; norm_num },
 	have h3 : ∀ n, a a₀ n = 3 → a a₀ (n+1) = 6,
 	{	intros n h,	convert a_succ_of_not_sq _,	{ rw h},
-		rw h,	apply @no_middle_square 3 1; norm_num },
+		rw h,	apply @not_exists_sq 3 1; norm_num },
 	have hper : (∃ n, a a₀ n = 3) → periodic a₀,
 	{	rintro ⟨n, hn⟩,
 		apply @periodic_of_term_equal _ n (n + 3) (by linarith),
@@ -425,13 +441,13 @@ begin
 		λ n hn, a_succ_of_sq 2 (by { rw hn, refl }),
 	have h7 : ∀ n, a a₀ n = 7 → a a₀ (n+1) = 10,
 	{ intros n han, convert a_succ_of_not_sq _, { rw han },
-		rw han,	apply @no_middle_square 7 2; norm_num },
+		rw han,	apply @not_exists_sq 7 2; norm_num },
 	have h10 : ∀ n, a a₀ n = 10 → a a₀ (n+1) = 13,
 	{ intros n han, convert a_succ_of_not_sq _, { rw han },
-		rw han, apply @no_middle_square 10 3; norm_num },
+		rw han, apply @not_exists_sq 10 3; norm_num },
 	have h13 : ∀ n, a a₀ n = 13 → a a₀ (n+1) = 16,
 	{ intros n han, convert a_succ_of_not_sq _, { rw han },
-		rw han, apply @no_middle_square 13 3; norm_num },
+		rw han, apply @not_exists_sq 13 3; norm_num },
 	have h16 : ∀ n, a a₀ n = 16 → a a₀ (n+1) = 4 :=
 		λ n hn, a_succ_of_sq 4 (by { rw hn, refl }),
 	cases h with c4 c7,

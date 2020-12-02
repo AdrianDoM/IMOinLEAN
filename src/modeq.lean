@@ -60,9 +60,6 @@ end nat
 
 namespace zmod
 
-theorem ne_iff_not_modeq_nat {n a b : ℕ} : (↑a : zmod n) ≠ ↑b ↔ ¬ a ≡ b [MOD n] :=
-not_iff_not.mpr (eq_iff_modeq_nat n)
-
 theorem one_or_two_of_sq_eq_one {a : zmod 3} (h : a * a = ↑1) : a = 1 ∨ a = 2 := by dec_trivial!
 
 end zmod
