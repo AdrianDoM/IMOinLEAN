@@ -18,10 +18,12 @@ open real
 /-- A predicate defining what it means for a function to be a solution -/
 def sol (f : ℝ → ℝ) : Prop := ∀ x y, f (f x * f y) + f (x + y) = f (x * y)
 
+/-- The negation of a function -/
 def neg (f : ℝ → ℝ) : ℝ → ℝ := λ x, - f x
 
 lemma neg_neg_f (f : ℝ → ℝ) : neg (neg f) = f := by simp [neg]
 
+/-- The negation of a solution is also a solution -/
 theorem sol_of_neg_sol {f : ℝ → ℝ} (h : sol f) : sol (neg f) :=
 λ x y,
 calc - f ((- f x) * (- f y)) + (- f (x + y))
@@ -40,6 +42,7 @@ begin
 	rw [← add_sub_cancel (f _) (f (x + x / (x - 1))), hf, hxy, sub_self],
 end
 
+/-- A solution has a root at (f 0)² -/
 theorem sol_has_zero {f : ℝ → ℝ} (hf : sol f) : f (f 0 ^ 2) = 0 :=
 by { convert sol_mul_eq_zero hf 0 (by norm_num), simp [pow_two] }
 
@@ -51,6 +54,11 @@ begin
 	... = f 0                       : by rw [hf, mul_zero]
 	... = 0                         : h0
 end
+
+/- 
+From here on, we work on the consequences of assuming that f 0 < 0.
+This is enough, because if f is a solution and f 0 < 0, then g = neg f is a solution with g 0 < 0.
+-/
 
 theorem of_neg_at_zero {f : ℝ → ℝ} (hf : sol f) (h0 : f 0 < 0) :
 	f 1 = 0 ∧ (∀ a, f a = 0 → a = 1) ∧ f 0 = -1 :=
