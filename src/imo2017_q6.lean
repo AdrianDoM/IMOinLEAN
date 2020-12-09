@@ -21,8 +21,7 @@ positive integer n and integers a₀, a₁, ..., aₙ such that, for each (x,y) 
 
 noncomputable theory
 
-open mv_polynomial (hiding X)
-open int
+open mv_polynomial (hiding X) int finset
 open_locale big_operators
 
 /-- An ordered pair (x,y) of integers is a primitive root of the greatest commond divisor
@@ -134,12 +133,8 @@ def sol_aux (T : set (ℤ × ℤ)) (φ : mv_polynomial (fin 2) ℤ) : Prop :=
 def sol (T : set (ℤ × ℤ)) (φ : mv_polynomial (fin 2) ℤ) : Prop :=
 (∃ n, is_homogeneous φ n) ∧ ∀ t ∈ T, eval (to_val t) φ = 1
 
-/-- The finite set of primitive roots -/
-constant S : set (ℤ × ℤ)
-constant hS : ∀ p ∈ S, primitive_root p
-constant hfin : set.finite S
-
-theorem sol_aux_of_T {T : set (ℤ × ℤ)} (hT : ∀ s ∈ S, ∃ t ∈ T, ∃ (n : ℤ), s = n • t)
+theorem sol_aux_of_T {S T : set (ℤ × ℤ)} (hS : ∀ s ∈ S, primitive_root s) 
+	(hT : ∀ s ∈ S, ∃ (t ∈ T) (n : ℤ), s = n • t)
 	{φ : mv_polynomial (fin 2) ℤ} (hφ : sol_aux T φ) : sol_aux S φ :=
 begin
 	rcases hφ with ⟨⟨m, hhom⟩, hφT⟩,
@@ -161,7 +156,49 @@ theorem sol_of_sol_aux {T : set (ℤ × ℤ)} {φ : mv_polynomial (fin 2) ℤ} :
 
 /- From the past two theorems, we deduce that there is no harm in assuming that S has no
 primitive roots that are multiples of another primitive root in S. Moreover, it suffices
-to find a polynomial that evaluates to 1 or -1 at each point in S. -/
+to find a polynomial that evaluates to 1 or -1 at each point in S. The next theorem lets
+us extract such a subset from any S. -/
+
+theorem minimal_primitive_root_set {S : finset (ℤ × ℤ)} (hS : ∀ s ∈ S, primitive_root s) :
+	∃ T : finset (ℤ × ℤ), T ⊆ S ∧ (∀ t ∈ T, primitive_root t) ∧
+	(∀ t₁ t₂ ∈ T, (∃ n : ℤ, t₂ = n • t₁) → t₂ = t₁) ∧ (∀ s ∈ S, ∃ (t ∈ T) (n : ℤ), s = n • t) :=
+begin
+	apply S.induction_on',
+	{	use ∅, simp },
+	rintros a R haS hR hanR ⟨T, hTR, hTprim, hTmul, hT⟩,
+	by_cases h : ∃ (r ∈ R) (n : ℤ), a = n • r,
+	{	use [T, subset.trans hTR (subset_insert _ _), hTprim, hTmul],
+		intros a ha,
+		rcases mem_insert.mp ha with rfl | ha, swap,
+		{	exact hT a ha },
+		rcases h with ⟨r, hr, n, hn⟩,
+		rcases hT r hr with ⟨t, ht, m, hm⟩,
+		use [t, ht, n * m], rw [hn, hm, mul_smul] },
+	use [insert a T, insert_subset_insert a hTR],
+	repeat { split },
+	{ intros t ht,
+		rcases mem_insert.mp ht with rfl | ht,
+		{	exact hS t haS },
+		exact hTprim t ht }, swap,
+	{	intros s hs,
+		rcases mem_insert.mp hs with rfl | hs,
+		{	use [s, mem_insert_self _ _, 1, by simp] },
+		rcases hT s hs with ⟨t, ht, n, hn⟩,
+		use [t, mem_insert_of_mem ht, n, hn] },
+	intros t₁ t₂ ht₁ ht₂ hn,
+	rcases mem_insert.mp ht₁ with rfl | ht₁', swap,
+	{ rcases mem_insert.mp ht₂ with rfl | ht₂',
+		{ exfalso, apply h, use [t₁, mem_of_subset hTR ht₁'], exact hn },
+		exact hTmul t₁ t₂ ht₁' ht₂' hn },
+	rcases mem_insert.mp ht₂ with rfl | ht₂',
+	{ refl },
+	exfalso,
+	rcases hn with ⟨n, rfl⟩,
+	apply h,
+	use [n • t₁, mem_of_subset hTR ht₂', n],
+	rw ← mul_smul,
+	rcases primitive_root.of_mul_primitive (hTprim _ ht₂') with ⟨_, rfl | rfl⟩; simp,
+end
 
 /-- Convenient names for the two variables in an xy_poly -/
 def X : mv_polynomial (fin 2) ℤ := mv_polynomial.X 0
