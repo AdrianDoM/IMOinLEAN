@@ -203,3 +203,53 @@ end
 /-- Convenient names for the two variables in an xy_poly -/
 def X : mv_polynomial (fin 2) ℤ := mv_polynomial.X 0
 def Y : mv_polynomial (fin 2) ℤ := mv_polynomial.X 1
+
+section reduced
+
+variable S : finset (ℤ × ℤ)
+variable hSprim : ∀ s ∈ S, primitive_root s
+variable hSmul : ∀ s₁ s₂ ∈ S, (∃ n : ℤ, s₂ = n • s₁) → s₂ = s₁
+
+def l (p : ℤ × ℤ) : mv_polynomial (fin 2) ℤ := p.2 * X - p.1 * Y
+def g (p : ℤ × ℤ) : mv_polynomial (fin 2) ℤ := ∏ s in S.erase p, l s
+
+lemma l_eval : ∀ (p q : ℤ × ℤ), eval (to_val q) (l p) = p.2 * q.1 - p.1 * q.2 :=
+begin
+	intros p q,
+	rw eval_eq',
+	sorry
+end
+
+lemma l_is_homogeneous (p : ℤ × ℤ) : is_homogeneous (l p) 1 :=
+begin
+	simp [l],
+	apply is_homogeneous.add,
+	{	apply @is_homogeneous.mul _ _ _ _ X 0 1,
+		{ have : @C ℤ (fin 2) _ p.2 = ↑(p.2) := by simp,
+			rw ← this,
+			apply is_homogeneous_C },
+		apply is_homogeneous_X },
+	rw neg_mul_eq_neg_mul,
+	apply @is_homogeneous.mul _ _ _ _ Y 0 1,
+	{ have : @C ℤ (fin 2) _ (-p.1) = -↑(p.1) := by simp,
+		rw ← this,
+		apply is_homogeneous_C },
+	apply is_homogeneous_X,
+end
+
+lemma g_is_homogeneous {s : ℤ × ℤ} : s ∈ S → is_homogeneous (g S s) (S.card - 1) :=
+begin
+	intro hs,
+	rw [← nat.pred_eq_sub_one, ← card_erase_of_mem hs],
+	unfold g,
+	convert is_homogeneous.prod (S.erase s) (λ s, l s) (λ _, 1) (λ s _, l_is_homogeneous s),
+	simp,	
+end
+
+lemma l_unique_zero : ∀ {s t ∈ S}, eval (to_val t) (l s) = 0 → s = t :=
+begin
+	intros s t hs ht heval,
+	sorry,
+end
+
+end reduced
