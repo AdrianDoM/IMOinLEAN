@@ -8,6 +8,7 @@ import algebra.module.basic
 import tactic
 import int
 import mv_polynomial
+import finset
 
 /-!
 # IMO 2017 Q6
@@ -21,7 +22,7 @@ positive integer n and integers a₀, a₁, ..., aₙ such that, for each (x,y) 
 
 noncomputable theory
 
-open mv_polynomial (hiding X) int finset
+open mv_polynomial (hiding X) int (hiding range) finset
 open_locale big_operators
 
 /-- An ordered pair (x,y) of integers is a primitive root of the greatest commond divisor
@@ -210,31 +211,26 @@ variable S : finset (ℤ × ℤ)
 variable hSprim : ∀ s ∈ S, primitive_root s
 variable hSmul : ∀ s₁ s₂ ∈ S, (∃ n : ℤ, s₂ = n • s₁) → s₂ = s₁
 
-def l (p : ℤ × ℤ) : mv_polynomial (fin 2) ℤ := p.2 * X - p.1 * Y
+def l (p : ℤ × ℤ) : mv_polynomial (fin 2) ℤ := C p.2 * X - C p.1 * Y
 def g (p : ℤ × ℤ) : mv_polynomial (fin 2) ℤ := ∏ s in S.erase p, l s
 
-lemma l_eval : ∀ (p q : ℤ × ℤ), eval (to_val q) (l p) = p.2 * q.1 - p.1 * q.2 :=
+lemma l_eval (p q : ℤ × ℤ) : eval (to_val q) (l p) = p.2 * q.1 - p.1 * q.2 :=
 begin
-	intros p q,
-	rw eval_eq',
-	sorry
+	unfold l, simp [eval_monomial],
+	congr; { simp [X, Y], refl },
 end
 
 lemma l_is_homogeneous (p : ℤ × ℤ) : is_homogeneous (l p) 1 :=
 begin
-	simp [l],
-	apply is_homogeneous.add,
-	{	apply @is_homogeneous.mul _ _ _ _ X 0 1,
-		{ have : @C ℤ (fin 2) _ p.2 = ↑(p.2) := by simp,
-			rw ← this,
-			apply is_homogeneous_C },
-		apply is_homogeneous_X },
-	rw neg_mul_eq_neg_mul,
-	apply @is_homogeneous.mul _ _ _ _ Y 0 1,
-	{ have : @C ℤ (fin 2) _ (-p.1) = -↑(p.1) := by simp,
-		rw ← this,
-		apply is_homogeneous_C },
-	apply is_homogeneous_X,
+	unfold l,	apply is_homogeneous.add,
+	{ unfold X mv_polynomial.X,
+		rw C_mul_monomial,
+		apply is_homogeneous_monomial,
+		rw [finsupp.support_single_ne_zero (nat.one_ne_zero), sum_singleton], simp },
+	unfold Y mv_polynomial.X,
+	convert @is_homogeneous_monomial (fin 2) ℤ _ (finsupp.single 1 1) (-p.1) 1 _,
+	{ conv_rhs { rw [← mul_one (-p.1), ← C_mul_monomial] }, simp },
+	rw [finsupp.support_single_ne_zero (nat.one_ne_zero), sum_singleton], simp,
 end
 
 lemma g_is_homogeneous {s : ℤ × ℤ} : s ∈ S → is_homogeneous (g S s) (S.card - 1) :=
@@ -243,13 +239,72 @@ begin
 	rw [← nat.pred_eq_sub_one, ← card_erase_of_mem hs],
 	unfold g,
 	convert is_homogeneous.prod (S.erase s) (λ s, l s) (λ _, 1) (λ s _, l_is_homogeneous s),
-	simp,	
+	simp,
 end
 
-lemma l_unique_zero : ∀ {s t ∈ S}, eval (to_val t) (l s) = 0 → s = t :=
+lemma exists_eval_one {p : ℤ × ℤ} (h : primitive_root p) :
+	∃ φ : mv_polynomial (fin 2) ℤ, is_homogeneous φ 1 ∧ eval (to_val p) φ = 1 :=
 begin
-	intros s t hs ht heval,
-	sorry,
+	rcases exists_mul_eq_gcd p.1 p.2 with ⟨a, b, hab⟩,
+	unfold primitive_root at h, simp [h] at hab,
+	use C a * X + C b * Y, split, swap,
+	{ simp [eval_monomial],
+		rw [mul_comm a, mul_comm b, ← hab],
+		congr; { unfold X Y, simp, refl } },
+	apply is_homogeneous.add;
+	{ unfold X Y mv_polynomial.X,
+		rw C_mul_monomial,
+		apply is_homogeneous_monomial,
+		rw [finsupp.support_single_ne_zero (nat.one_ne_zero), sum_singleton], simp },
 end
+
+include hSprim hSmul
+lemma l_zero_iff {s t : ℤ × ℤ} (hs : s ∈ S) (ht : t ∈ S) : eval (to_val t) (l s) = 0 ↔ t = s :=
+begin
+	split, swap,
+	{ rintro rfl, rw [l_eval], ring },
+	intro heval,
+	rw [l_eval, sub_eq_zero] at heval,
+	rcases mul_of_coprime_mul (hSprim s hs) heval.symm with ⟨n, h2, h1⟩,
+	apply hSmul s t hs ht,
+	use n,
+	rw prod.eq_iff_fst_eq_snd_eq, simp, use [h1, h2],
+end
+
+lemma g_zero_iff {s t : ℤ × ℤ} (hs : s ∈ S) (ht : t ∈ S) : eval (to_val t) (g S s) = 0 ↔ t ≠ s :=
+begin
+	unfold g,
+	rw [eval_prod, prod_eq_zero_iff],
+	split,
+	{	rintro ⟨t', ht', heval⟩ rfl,
+		rw l_zero_iff S hSprim hSmul (mem_of_mem_erase ht') ht at heval,
+		rw heval at ht', exact not_mem_erase t' S ht' },
+	intro hts,
+	use [t, mem_erase_of_ne_of_mem hts ht],
+	rw l_zero_iff S hSprim hSmul ht ht,
+end
+
+lemma exists_degree_ge {s : ℤ × ℤ} (hs : s ∈ S) {n : ℕ} (hn : S.card - 1 ≤ n) :
+	∃ φ : mv_polynomial (fin 2) ℤ, is_homogeneous φ n ∧ ∀ t ∈ S, eval (to_val t) φ = 0 ↔ t ≠ s :=
+begin
+	rcases exists_eval_one (hSprim s hs) with ⟨ψ, hψhom, hψeval⟩,
+	use ψ ^ (n - (S.card - 1)) * g S s,
+	split,
+	{	convert @is_homogeneous.mul _ _ _ _ _ (n - (S.card - 1)) (S.card - 1) _ (g_is_homogeneous S hs),
+		{ rw nat.sub_add_cancel hn },
+		conv { congr, skip, rw ← sum_one_range_eq (n - (S.card - 1)) },
+		rw pow_eq_prod_const, -- TODO: make is_homogeneous.pow a theorem in mathlib
+		apply is_homogeneous.prod,
+		intros i hi, exact hψhom },
+	intros t ht,
+	rw [eval_mul, mul_eq_zero, g_zero_iff S hSprim hSmul hs ht],
+	split, swap,
+	{	intro h, right, exact h },
+	rintros h rfl, cases h with h1 h2, swap,
+	{	contradiction },
+	rw [eval_pow, hψeval, one_pow] at h1,
+	norm_num at h1,
+end
+omit hSprim hSmul
 
 end reduced
