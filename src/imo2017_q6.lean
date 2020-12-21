@@ -3,12 +3,15 @@ Author: Adrián Doña Mateo
 -/
 
 import data.int.gcd
+import data.int.modeq
+import data.nat.totient
 import ring_theory.polynomial.homogeneous
 import algebra.module.basic
 import tactic
 import int
 import mv_polynomial
 import finset
+import homogeneous
 
 /-!
 # IMO 2017 Q6
@@ -285,17 +288,15 @@ begin
 end
 
 lemma exists_degree_ge {s : ℤ × ℤ} (hs : s ∈ S) {n : ℕ} (hn : S.card - 1 ≤ n) :
-	∃ φ : mv_polynomial (fin 2) ℤ, is_homogeneous φ n ∧ ∀ t ∈ S, eval (to_val t) φ = 0 ↔ t ≠ s :=
+	∃ φ : mv_polynomial (fin 2) ℤ, φ.is_homogeneous n ∧ ∀ t ∈ S, eval (to_val t) φ = 0 ↔ t ≠ s :=
 begin
 	rcases exists_eval_one (hSprim s hs) with ⟨ψ, hψhom, hψeval⟩,
 	use ψ ^ (n - (S.card - 1)) * g S s,
 	split,
 	{	convert @is_homogeneous.mul _ _ _ _ _ (n - (S.card - 1)) (S.card - 1) _ (g_is_homogeneous S hs),
 		{ rw nat.sub_add_cancel hn },
-		conv { congr, skip, rw ← sum_one_range_eq (n - (S.card - 1)) },
-		rw pow_eq_prod_const, -- TODO: make is_homogeneous.pow a theorem in mathlib
-		apply is_homogeneous.prod,
-		intros i hi, exact hψhom },
+		conv { congr, skip, rw ← nat.one_mul (n - _)},
+		apply is_homogeneous.pow hψhom },
 	intros t ht,
 	rw [eval_mul, mul_eq_zero, g_zero_iff S hSprim hSmul hs ht],
 	split, swap,
@@ -306,5 +307,20 @@ begin
 	norm_num at h1,
 end
 omit hSprim hSmul
+
+local notation `ϕ` := nat.totient
+
+theorem exists_homogeneous_one_at_coprime_of_prime_power {p k : ℕ} (hp : p.prime) :
+	∃ n (φ : mv_polynomial (fin 2) ℤ), 0 < n ∧ φ.is_homogeneous n ∧
+	(∀ t, primitive_root t → eval (to_val t) φ ≡ 1 [ZMOD p ^ k]) :=
+begin
+	rcases nat.prime.eq_two_or_odd hp with rfl | hodd,
+	{	use [2 * ϕ (2 ^ k), (X ^ 2 + X * Y + Y ^ 2) ^ (ϕ (2 ^ k))], split,
+		{ have h2pos : 0 < 2 := by norm_num,
+			exact nat.mul_pos h2pos (nat.totient_pos $ pow_pos h2pos k) }, split,
+		{ have hhom : (X ^ 2 + X * Y + Y * 2).is_homogeneous 2,
+			{ }},
+		}
+end
 
 end reduced
