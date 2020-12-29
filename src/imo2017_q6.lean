@@ -3,15 +3,16 @@ Author: Adrián Doña Mateo
 -/
 
 import data.int.gcd
-import data.int.modeq
 import data.nat.totient
 import ring_theory.polynomial.homogeneous
+import field_theory.finite.basic
 import algebra.module.basic
 import tactic
 import int
 import mv_polynomial
 import finset
 import homogeneous
+import zmod
 
 /-!
 # IMO 2017 Q6
@@ -30,14 +31,14 @@ open_locale big_operators
 
 /-- An ordered pair (x,y) of integers is a primitive root of the greatest commond divisor
 of x and y is 1 -/
-def primitive_root (p : ℤ × ℤ) : Prop := gcd p.fst p.snd = 1
+def primitive_root (p : ℤ × ℤ) : Prop := int.gcd p.fst p.snd = 1
 
 local attribute [instance, priority 1000] semiring.to_semimodule
 
 namespace primitive_root
 
 lemma neg {p : ℤ × ℤ} (h : primitive_root p) : primitive_root (-p) :=
-by { unfold primitive_root at *, simp, unfold gcd at *, simpa }
+by { unfold primitive_root at *, simp, unfold int.gcd at *, simpa }
 
 /-- If two primitive are multiples of each other they must either be the same primitive root
 or the negation of each other -/
@@ -46,7 +47,7 @@ lemma of_mul_primitive {p : ℤ × ℤ} {n : ℤ} (h : primitive_root (n • p))
 begin
 	have hn : n = 1 ∨ n = -1,
 	{ simp [primitive_root] at h,
-		have hn : n ∣ ↑1 := by { rw [← h], apply dvd_gcd; apply dvd_mul_right },
+		have hn : n ∣ ↑1 := by { rw [← h], apply int.dvd_gcd; apply dvd_mul_right },
 		exact dvd_one hn },
 	split, swap, { exact hn },
 	cases hn with h1 hn1,
@@ -58,12 +59,14 @@ end
 
 end primitive_root
 
-lemma sq_eq_one {φ : mv_polynomial (fin 2) ℤ} {xy : fin 2 → ℤ} :
+local notation `polyℤ` := mv_polynomial (fin 2) ℤ
+
+lemma sq_eq_one {φ : polyℤ} {xy : fin 2 → ℤ} :
 	eval xy φ = 1 ∨ eval xy φ = -1 → eval xy (φ * φ) = 1 :=
 λ h, by rwa [eval_mul, mul_self_eq_one_iff]
 
 /-- In a homogeneous polynomial φ, all monomials have the same degree -/
-theorem monomial_deg {φ : mv_polynomial (fin 2) ℤ} {n : ℕ} (hφ : is_homogeneous φ n) :
+theorem monomial_deg {φ : polyℤ} {n : ℕ} (hφ : is_homogeneous φ n) :
 	∀ ⦃d⦄, coeff d φ ≠ 0 → d 0 + d 1 = n :=
 begin
 	intros d hcoeff,
@@ -90,7 +93,7 @@ end
 /-- If a homogeneous polynomial φ evaluates to an integer a at some (x, y), then it evaluates
 to ±a at (-x, -y). This shows that it is enough to consider a set S where no two primitive roots
 are multiples of each other -/
-lemma eval_pm_of_homogeneous_at_neg {φ : mv_polynomial (fin 2) ℤ} {n : ℕ} {xy : fin 2 → ℤ}
+lemma eval_pm_of_homogeneous_at_neg {φ : polyℤ} {n : ℕ} {xy : fin 2 → ℤ}
 	(hφ : is_homogeneous φ n) :
 	eval (λ i, - xy i) φ = eval xy φ ∨ eval (λ i, - xy i) φ = - eval xy φ :=
 begin
@@ -131,15 +134,15 @@ begin
 	show (-p).2 = -p.2, simp,
 end
 
-def sol_aux (T : set (ℤ × ℤ)) (φ : mv_polynomial (fin 2) ℤ) : Prop :=
+def sol_aux (T : set (ℤ × ℤ)) (φ : polyℤ) : Prop :=
 (∃ n, is_homogeneous φ n) ∧ ∀ t ∈ T, eval (to_val t) φ = 1 ∨ eval (to_val t) φ = -1
 
-def sol (T : set (ℤ × ℤ)) (φ : mv_polynomial (fin 2) ℤ) : Prop :=
+def sol (T : set (ℤ × ℤ)) (φ : polyℤ) : Prop :=
 (∃ n, is_homogeneous φ n) ∧ ∀ t ∈ T, eval (to_val t) φ = 1
 
 theorem sol_aux_of_T {S T : set (ℤ × ℤ)} (hS : ∀ s ∈ S, primitive_root s) 
 	(hT : ∀ s ∈ S, ∃ (t ∈ T) (n : ℤ), s = n • t)
-	{φ : mv_polynomial (fin 2) ℤ} (hφ : sol_aux T φ) : sol_aux S φ :=
+	{φ : polyℤ} (hφ : sol_aux T φ) : sol_aux S φ :=
 begin
 	rcases hφ with ⟨⟨m, hhom⟩, hφT⟩,
 	use ⟨m, hhom⟩,
@@ -154,7 +157,7 @@ begin
 	apply eval_pm_of_homogeneous_at_neg hhom,
 end
 
-theorem sol_of_sol_aux {T : set (ℤ × ℤ)} {φ : mv_polynomial (fin 2) ℤ} :
+theorem sol_of_sol_aux {T : set (ℤ × ℤ)} {φ : polyℤ} :
 	sol_aux T φ → sol T (φ * φ) :=
 λ ⟨⟨n, hhom⟩, h⟩, ⟨⟨n + n, is_homogeneous.mul hhom hhom⟩, λ t ht, sq_eq_one (h t ht)⟩
 
@@ -205,8 +208,8 @@ begin
 end
 
 /-- Convenient names for the two variables in an xy_poly -/
-def X : mv_polynomial (fin 2) ℤ := mv_polynomial.X 0
-def Y : mv_polynomial (fin 2) ℤ := mv_polynomial.X 1
+def X : polyℤ := mv_polynomial.X 0
+def Y : polyℤ := mv_polynomial.X 1
 
 section reduced
 
@@ -214,8 +217,8 @@ variable S : finset (ℤ × ℤ)
 variable hSprim : ∀ s ∈ S, primitive_root s
 variable hSmul : ∀ s₁ s₂ ∈ S, (∃ n : ℤ, s₂ = n • s₁) → s₂ = s₁
 
-def l (p : ℤ × ℤ) : mv_polynomial (fin 2) ℤ := C p.2 * X - C p.1 * Y
-def g (p : ℤ × ℤ) : mv_polynomial (fin 2) ℤ := ∏ s in S.erase p, l s
+def l (p : ℤ × ℤ) : polyℤ := C p.2 * X - C p.1 * Y
+def g (p : ℤ × ℤ) : polyℤ := ∏ s in S.erase p, l s
 
 lemma l_eval (p q : ℤ × ℤ) : eval (to_val q) (l p) = p.2 * q.1 - p.1 * q.2 :=
 begin
@@ -246,7 +249,7 @@ begin
 end
 
 lemma exists_eval_one {p : ℤ × ℤ} (h : primitive_root p) :
-	∃ φ : mv_polynomial (fin 2) ℤ, is_homogeneous φ 1 ∧ eval (to_val p) φ = 1 :=
+	∃ φ : polyℤ, is_homogeneous φ 1 ∧ eval (to_val p) φ = 1 :=
 begin
 	rcases exists_mul_eq_gcd p.1 p.2 with ⟨a, b, hab⟩,
 	unfold primitive_root at h, simp [h] at hab,
@@ -288,7 +291,7 @@ begin
 end
 
 lemma exists_degree_ge {s : ℤ × ℤ} (hs : s ∈ S) {n : ℕ} (hn : S.card - 1 ≤ n) :
-	∃ φ : mv_polynomial (fin 2) ℤ, φ.is_homogeneous n ∧ ∀ t ∈ S, eval (to_val t) φ = 0 ↔ t ≠ s :=
+	∃ φ : polyℤ, φ.is_homogeneous n ∧ ∀ t ∈ S, eval (to_val t) φ = 0 ↔ t ≠ s :=
 begin
 	rcases exists_eval_one (hSprim s hs) with ⟨ψ, hψhom, hψeval⟩,
 	use ψ ^ (n - (S.card - 1)) * g S s,
@@ -309,18 +312,35 @@ end
 omit hSprim hSmul
 
 local notation `ϕ` := nat.totient
-
+#check is_coprime.pow
 theorem exists_homogeneous_one_at_coprime_of_prime_power {p k : ℕ} (hp : p.prime) :
-	∃ n (φ : mv_polynomial (fin 2) ℤ), 0 < n ∧ φ.is_homogeneous n ∧
-	(∀ t, primitive_root t → eval (to_val t) φ ≡ 1 [ZMOD p ^ k]) :=
+	∃ n (φ : polyℤ), 0 < n ∧ φ.is_homogeneous n ∧
+	(∀ t, primitive_root t → ↑(eval (to_val t) φ) = (1 : zmod (p ^ k))) :=
 begin
 	rcases nat.prime.eq_two_or_odd hp with rfl | hodd,
-	{	use [2 * ϕ (2 ^ k), (X ^ 2 + X * Y + Y ^ 2) ^ (ϕ (2 ^ k))], split,
-		{ have h2pos : 0 < 2 := by norm_num,
-			exact nat.mul_pos h2pos (nat.totient_pos $ pow_pos h2pos k) }, split,
-		{ have hhom : (X ^ 2 + X * Y + Y * 2).is_homogeneous 2,
-			{ }},
-		}
+	{	have two_pos : 0 < 2 := by norm_num,
+    use [2 * ϕ (2 ^ k), (X ^ 2 + X * Y + Y ^ 2) ^ (ϕ (2 ^ k))], split,
+		{ exact nat.mul_pos two_pos (nat.totient_pos $ pow_pos two_pos k) }, split,
+		{ have hhom : (X ^ 2 + X * Y + Y ^ 2).is_homogeneous 2,
+			{ rw [pow_two, pow_two],
+        repeat { apply is_homogeneous.add };
+        { apply is_homogeneous.mul; { unfold X Y, apply is_homogeneous_X } } },
+      apply is_homogeneous.pow hhom },
+    intros t ht,
+    convert_to _ = ↑(1 : ℤ), {sorry},
+    rw [zmod.int_coe_eq_int_coe_iff, eval_pow],
+    apply modeq.pow_totient,
+    conv { congr, simp [X, Y], change t.1 ^ 2 + t.1 * t.2 + t.2 ^ 2, skip, simp },
+    apply is_coprime.pow_right,
+    rcases @modeq.exists_unique_equiv t.1 2 (by norm_num) with ⟨x, hx1, hx2, hx⟩,
+    rcases @modeq.exists_unique_equiv t.2 2 (by norm_num) with ⟨y, hy1, hy2, hy⟩,
+    interval_cases x,
+    { interval_cases y,
+      { have := int.dvd_gcd (modeq.modeq_zero_iff.mp hx.symm) (modeq.modeq_zero_iff.mp hy.symm),
+        unfold primitive_root at ht, simp [ht] at this,
+        cases dvd_one this; linarith },
+      }}
 end
+
 
 end reduced
