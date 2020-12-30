@@ -35,9 +35,11 @@ begin
     rw peq1 at hp,
     exact nat.not_prime_one hp },
   intro hndvd,
-  
+  cases (nat.dvd_prime hp).mp (coe_nat_dvd.mp $ gcd_dvd_right a p) with h1 heqp,
+  { assumption },
+  exfalso, apply hndvd, rw ← heqp, apply gcd_dvd_left,
 end
-#check gcd_dvd_right
+
 end int
 
 local notation ` ϕ ` := nat.totient

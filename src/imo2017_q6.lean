@@ -13,6 +13,9 @@ import mv_polynomial
 import finset
 import homogeneous
 import zmod
+import coprime
+import prime
+import modeq
 
 /-!
 # IMO 2017 Q6
@@ -312,10 +315,10 @@ end
 omit hSprim hSmul
 
 local notation `ϕ` := nat.totient
-#check is_coprime.pow
+
 theorem exists_homogeneous_one_at_coprime_of_prime_power {p k : ℕ} (hp : p.prime) :
 	∃ n (φ : polyℤ), 0 < n ∧ φ.is_homogeneous n ∧
-	(∀ t, primitive_root t → ↑(eval (to_val t) φ) = (1 : zmod (p ^ k))) :=
+	(∀ t, primitive_root t → eval (to_val t) φ ≡ 1 [ZMOD ↑(p ^ k)]) :=
 begin
 	rcases nat.prime.eq_two_or_odd hp with rfl | hodd,
 	{	have two_pos : 0 < 2 := by norm_num,
@@ -327,8 +330,7 @@ begin
         { apply is_homogeneous.mul; { unfold X Y, apply is_homogeneous_X } } },
       apply is_homogeneous.pow hhom },
     intros t ht,
-    convert_to _ = ↑(1 : ℤ), {sorry},
-    rw [zmod.int_coe_eq_int_coe_iff, eval_pow],
+    rw eval_pow,
     apply modeq.pow_totient,
     conv { congr, simp [X, Y], change t.1 ^ 2 + t.1 * t.2 + t.2 ^ 2, skip, simp },
     apply is_coprime.pow_right,
@@ -339,8 +341,95 @@ begin
       { have := int.dvd_gcd (modeq.modeq_zero_iff.mp hx.symm) (modeq.modeq_zero_iff.mp hy.symm),
         unfold primitive_root at ht, simp [ht] at this,
         cases dvd_one this; linarith },
-      }}
+			change is_coprime _ ↑2,
+			rw int.is_coprime_prime nat.prime_two,
+			intro hdvd,
+			rw ← modeq.modeq_zero_iff at hdvd,
+			change _ ≡ _ [ZMOD ↑2] at hx,
+			change _ ≡ _ [ZMOD ↑2] at hy,
+			rw ← zmod.int_coe_eq_int_coe_iff at *,
+			simp [← hx, ← hy, zero_pow] at hdvd,
+			exact hdvd },
+		interval_cases y,
+		{	change is_coprime _ ↑2,
+			rw int.is_coprime_prime nat.prime_two,
+			intro hdvd,
+			rw ← modeq.modeq_zero_iff at hdvd,
+			change _ ≡ _ [ZMOD ↑2] at hx,
+			change _ ≡ _ [ZMOD ↑2] at hy,
+			rw ← zmod.int_coe_eq_int_coe_iff at *,
+			simp [← hx, ← hy, zero_pow] at hdvd,
+			exact hdvd },
+		change is_coprime _ ↑2,
+		rw int.is_coprime_prime nat.prime_two,
+		intro hdvd,
+		rw ← modeq.modeq_zero_iff at hdvd,
+		change _ ≡ _ [ZMOD ↑2] at hx,
+		change _ ≡ _ [ZMOD ↑2] at hy,
+		rw ← zmod.int_coe_eq_int_coe_iff at *,
+		simp [← hx, ← hy] at hdvd,
+		have : (1 : zmod 2) + 1 = 0 := by ring,
+		simp [this] at hdvd,
+		exact hdvd },
+	have p_gt_two : 2 < p,
+	{ by_contradiction h,
+		have := le_of_not_gt h,
+		interval_cases p,
+		{ exact nat.not_prime_zero hp },
+		{ exact nat.not_prime_one hp },
+		simp at hodd, exact hodd },
+	use [(p - 1) * ϕ (p ^ k), (X ^ (p - 1) + Y ^ (p - 1)) ^ (ϕ (p ^ k))], split,
+	{ apply mul_pos (lt_trans nat.zero_lt_one _) (nat.totient_pos $ pow_pos _ _),
+		{ rw ← nat.pred_eq_sub_one, change nat.pred 2 < p.pred,
+			apply nat.pred_lt_pred _ p_gt_two, norm_num },
+		exact lt_trans (by norm_num) p_gt_two }, split,
+	{ apply is_homogeneous.pow (is_homogeneous.add _ _);
+		{ conv { congr, skip, rw ← nat.one_mul (p - 1) },
+			apply is_homogeneous.pow, unfold X Y, apply is_homogeneous_X } },
+	intros t ht,
+	rw eval_pow,
+	apply modeq.pow_totient,
+	conv { congr, simp [X, Y], change t.1 ^ (p - 1) + t.2 ^ (p - 1), skip, simp },
+	apply is_coprime.pow_right,
+	rw is_coprime_prime hp,
+	rw [← modeq.modeq_zero_iff, ← nat.totient_prime hp],
+	by_cases hx : ↑p ∣ t.1,
+	{ by_cases hy : ↑p ∣ t.2,
+		{	exfalso, apply nat.prime.not_dvd_one hp (coe_nat_dvd.mp _),
+			unfold primitive_root at ht, rw ← ht,
+			apply int.dvd_gcd hx hy },
+		have : t.1 ^ p.totient ≡ 0 [ZMOD p] := modeq.modeq_zero_iff.mpr (dvd_pow hx $
+			ne_of_gt (nat.totient_pos $ lt_trans (by norm_num) p_gt_two)),
+		simp [← zmod.int_coe_eq_int_coe_iff] at *,
+		rw [this, zero_add, ← cast_pow, ← cast_zero, zmod.int_coe_eq_int_coe_iff],
+		have h1 : t.2 ^ p.totient ≡ 1 [ZMOD p] := modeq.pow_totient ((is_coprime_prime hp).mpr hy),
+		intro h0,
+		apply nat.prime.not_dvd_one hp,
+		simp [← coe_nat_dvd, ← modeq.modeq_zero_iff],
+		exact modeq.trans h1.symm h0 },
+	have hx1 : t.1 ^ p.totient ≡ 1 [ZMOD p] := modeq.pow_totient ((is_coprime_prime hp).mpr hx),
+	by_cases hy : ↑p ∣ t.2,
+	{ have : t.2 ^ p.totient ≡ 0 [ZMOD p] := modeq.modeq_zero_iff.mpr (dvd_pow hy $
+			ne_of_gt (nat.totient_pos $ lt_trans (by norm_num) p_gt_two)),
+		simp [← zmod.int_coe_eq_int_coe_iff] at this,
+		simp [← zmod.int_coe_eq_int_coe_iff],
+		rw [this, add_zero, ← cast_pow, ← cast_zero, zmod.int_coe_eq_int_coe_iff],
+		intro h0,
+		apply nat.prime.not_dvd_one hp,
+		simp [← coe_nat_dvd, ← modeq.modeq_zero_iff],
+		exact modeq.trans hx1.symm h0 },
+	have hy1 : t.2 ^ p.totient ≡ 1 [ZMOD p] := modeq.pow_totient ((is_coprime_prime hp).mpr hy),
+	simp [← zmod.int_coe_eq_int_coe_iff] at *,
+	simp [hx1, hy1],
+	convert_to ¬ (↑2 : zmod p) = ↑0, { simp, ring },
+	rw zmod.eq_iff_modeq_nat,
+	apply (nat.modeq.not_modeq_lt_iff p_gt_two (nat.prime.pos hp)).mpr,
+	norm_num,
 end
 
+#check is_homogeneous.add
+#check nat.prime.pos
+#check nat.totient_prime
+#check ne_
 
 end reduced
