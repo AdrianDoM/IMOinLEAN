@@ -1,8 +1,8 @@
 [package]
 name = "IMO2017"
 version = "0.1"
-lean_version = "leanprover-community/lean:3.23.0"
+lean_version = "leanprover-community/lean:3.24.0"
 path = "src"
 
 [dependencies]
-mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "61f63649166658dad1931c4de51e1122a1a852e8"}
+mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "cd7a8a184d7c5635e30083eabc4baf5589c30b7a"}

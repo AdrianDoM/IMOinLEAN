@@ -318,7 +318,7 @@ local notation `ϕ` := nat.totient
 
 theorem exists_homogeneous_one_at_coprime_of_prime_power {p k : ℕ} (hp : p.prime) :
 	∃ n (φ : polyℤ), 0 < n ∧ φ.is_homogeneous n ∧
-	(∀ t, primitive_root t → eval (to_val t) φ ≡ 1 [ZMOD ↑(p ^ k)]) :=
+	∀ t, primitive_root t → eval (to_val t) φ ≡ 1 [ZMOD ↑(p ^ k)] :=
 begin
 	rcases nat.prime.eq_two_or_odd hp with rfl | hodd,
 	{	have two_pos : 0 < 2 := by norm_num,
