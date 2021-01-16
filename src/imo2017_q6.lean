@@ -231,7 +231,8 @@ end
 
 lemma l_is_homogeneous (p : ℤ × ℤ) : is_homogeneous (l p) 1 :=
 begin
-	unfold l,	apply is_homogeneous.add,
+	unfold l,	rw sub_eq_add_neg,
+	apply is_homogeneous.add,
 	{ unfold X mv_polynomial.X,
 		rw C_mul_monomial,
 		apply is_homogeneous_monomial,
@@ -316,13 +317,14 @@ omit hSprim hSmul
 
 local notation `ϕ` := nat.totient
 
-theorem exists_homogeneous_one_at_coprime_of_prime_power {p k : ℕ} (hp : p.prime) :
-	∃ n (φ : polyℤ), 0 < n ∧ φ.is_homogeneous n ∧
-	∀ t, primitive_root t → eval (to_val t) φ ≡ 1 [ZMOD ↑(p ^ k)] :=
+def homogeneous_one_at_coprime_of_prime_power (p k : ℕ) (hp : p.prime) :
+	{ φn : polyℤ × ℕ // 0 < φn.2 ∧ φn.1.is_homogeneous φn.2 ∧
+	∀ t, primitive_root t → eval (to_val t) φn.1 ≡ 1 [ZMOD ↑(p ^ k)] } :=
 begin
+	apply classical.subtype_of_exists,
 	rcases nat.prime.eq_two_or_odd hp with rfl | hodd,
 	{	have two_pos : 0 < 2 := by norm_num,
-    use [2 * ϕ (2 ^ k), (X ^ 2 + X * Y + Y ^ 2) ^ (ϕ (2 ^ k))], split,
+    use ⟨(X ^ 2 + X * Y + Y ^ 2) ^ (ϕ (2 ^ k)), 2 * ϕ (2 ^ k)⟩, split,
 		{ exact nat.mul_pos two_pos (nat.totient_pos $ pow_pos two_pos k) }, split,
 		{ have hhom : (X ^ 2 + X * Y + Y ^ 2).is_homogeneous 2,
 			{ rw [pow_two, pow_two],
@@ -378,7 +380,7 @@ begin
 		{ exact nat.not_prime_zero hp },
 		{ exact nat.not_prime_one hp },
 		simp at hodd, exact hodd },
-	use [(p - 1) * ϕ (p ^ k), (X ^ (p - 1) + Y ^ (p - 1)) ^ (ϕ (p ^ k))], split,
+	use ⟨(X ^ (p - 1) + Y ^ (p - 1)) ^ (ϕ (p ^ k)), (p - 1) * ϕ (p ^ k)⟩, split,
 	{ apply mul_pos (lt_trans nat.zero_lt_one _) (nat.totient_pos $ pow_pos _ _),
 		{ rw ← nat.pred_eq_sub_one, change nat.pred 2 < p.pred,
 			apply nat.pred_lt_pred _ p_gt_two, norm_num },
@@ -426,10 +428,5 @@ begin
 	apply (nat.modeq.not_modeq_lt_iff p_gt_two (nat.prime.pos hp)).mpr,
 	norm_num,
 end
-
-#check is_homogeneous.add
-#check nat.prime.pos
-#check nat.totient_prime
-#check ne_
 
 end reduced
