@@ -1,6 +1,6 @@
 import data.int.gcd
 import data.list.zip
-open int euclidean_domain list
+open int (hiding mul_neg_eq_neg_mul_symm) euclidean_domain list
 
 lemma zip_with_mul_map_mul_right {α : Type*} [comm_ring α] (l₁ l₂ : list α) (r : α) :
 	zip_with (*) l₁ (l₂.map ((*) r)) = (zip_with (*) l₁ l₂).map ((*) r) :=
@@ -62,3 +62,27 @@ by rw [gcd_comm _ a, int.mod_def, sub_eq_add_neg, neg_mul_eq_mul_neg,
 
 lemma int.gcd_eq_abs_gcd (a b : ℤ) : int.gcd a b = (euclidean_domain.gcd a b).nat_abs :=
 gcd.induction a b (λ x, by simp) (λ a b ha ih, by rw [gcd_val, ← ih, int.gcd_mod])
+
+def abs_bezout_factors : list ℤ → list ℤ :=
+λ l, ite (0 ≤ l.foldr gcd 0) (bezout_factors l) ((bezout_factors l).map int.neg)
+
+lemma zip_with_mul_map_neg (l₁ l₂ : list ℤ) :
+	zip_with (*) l₁ (l₂.map int.neg) = (zip_with (*) l₁ l₂).map int.neg :=
+begin
+	induction l₁ with x₁ tl₁ ih₁ generalizing l₂, { simp },
+	induction l₂ with x₂ tl₂ ih₂, { simp },
+	simp, split,
+	{	change _ * -_ = -_, rw [mul_neg_eq_neg_mul_symm] },
+	exact ih₁ tl₂,
+end
+
+theorem abs_bezout_eq_gcd (l : list ℤ) :
+	(l.zip_with (*) (abs_bezout_factors l)).sum = abs (l.foldr gcd 0) :=
+begin
+	simp [abs_bezout_factors],
+	split_ifs,
+	{	rw [bezout_eq_gcd, abs_of_nonneg h] },
+	rw zip_with_mul_map_neg,
+	conv in (int.neg) {change λ x : ℤ, -x},
+	rw [← sum_neg, abs_of_neg (lt_of_not_ge h), bezout_eq_gcd],
+end
