@@ -12,53 +12,6 @@ open_locale big_operators
 local notation `polyℤ` := mv_polynomial (fin 2) ℤ
 local notation `ϕ` := nat.totient
 
-namespace list
-
-lemma erase_dup_ne_nil {α : Type*} [decidable_eq α] {a : α} {l : list α} :
-	l ≠ nil ↔ l.erase_dup ≠ nil :=
-by split;
-	{	intro h, rcases exists_cons_of_ne_nil h with ⟨b, L, hl⟩,
-		apply ne_nil_of_mem,
-		rw @mem_erase_dup _ _ b _ <|> rw ← @mem_erase_dup _ _ b _,
-		simp [hl] }
-
-end list
-
-lemma list_gcd_eq_zero {l : list ℤ} :
-	l.foldr euclidean_domain.gcd 0 = 0 ↔ ∀ n ∈ l, n = (0 : ℤ) :=
-begin
-	split,
-	{	intro h, induction l with hd tl ih, { simp },
-		intros n hn, rw list.mem_cons_iff at hn,
-		rw [list.foldr_cons, euclidean_domain.gcd_eq_zero_iff] at h,
-		cases hn with h1 h2,
-		{	rw [h1, h.1] },
-		exact ih h.2 n h2 },
-	intro h, induction l with hd tl ih,	{ simp },
-	rw [list.foldr_cons, euclidean_domain.gcd_eq_zero_iff],
-	exact ⟨h hd (by simp), ih (λ n hn, h n (by simp [hn]))⟩,
-end
-
-lemma list_gcd_dvd_aux {l : list ℤ} (n : ℤ) :
-	l.foldr euclidean_domain.gcd n ∣ n :=
-begin
-	induction l with hd tl ih generalizing n, { simp },
-	rw list.foldr_cons,
-	apply dvd.trans _ (ih _),
-	apply euclidean_domain.gcd_dvd_right,
-end	
-
-lemma list_gcd_dvd {l : list ℤ} (a : ℤ):
-	∀ x ∈ l, l.foldr euclidean_domain.gcd a ∣ x :=
-begin
-	induction l with hd tl ih generalizing a, { simp },
-	intros x hx, rw list.mem_cons_iff at hx,
-	rw list.foldr_cons,
-	rcases hx with rfl | hxtl,
-	{ apply euclidean_domain.gcd_dvd_left },
-	apply dvd.trans (euclidean_domain.gcd_dvd_right _ _) (ih a x hxtl),
-end
-
 def homogeneous_one_at_coprime {a : ℕ} (ha : 0 < a) :
 	{ φn : polyℤ × ℕ // 0 < φn.2 ∧ φn.1.is_homogeneous φn.2 ∧
 	∀ t, primitive_root t → eval (to_val t) φn.1 ≡ 1 [ZMOD a] } :=
@@ -74,19 +27,17 @@ begin
 	have hcoprime : (removepowers.foldl euclidean_domain.gcd 0).nat_abs = 1,
 	{	sorry /- copy from below -/	},
 	let bezout := abs_bezout_factors removepowers,
+	let bezout_p : list polyℤ := bezout.map (λ a, C a),
 	let φs : list (polyℤ × ℕ) :=
 		primes.pmap (λ pk hp, homogeneous_one_at_coprime_of_prime_power pk.1 pk.2 hp) hprimes,
-	let K : ℕ := φs.foldr (λ φn n, nat.lcm φn.2 1) 1,
+	let K : ℕ := list.foldr nat.lcm 1 (φs.map prod.snd),
 	let ψs : list polyℤ := φs.map (λ φn, φn.1 ^ (K / φn.2)),
-	use [list.sum (list.zip_with (λ (a : ℤ) (ψ : polyℤ), a * ψ) bezout ψs), K],
-	split,
-	{	simp [K], sorry /- lemma that lcm of nonzero is nonzero -/ }, split,
-	{ simp, sorry /- is_homogeneous.sum for list instead of finset -/ },
+	use [list.sum (list.zip_with (*) bezout_p ψs), K], split,
+	{ sorry /- copy from below -/ }, split,
+	{ sorry /- copy from below -/ },
 	sorry /- probably going to need more eval lemmas for sums with lists -/
 end
 
-#check list.sum
-#check div_eq_zero_iff
 #print sigma
 #eval (nat.factors 100).erase_dup
 #eval (-10 : ℤ) % 1
@@ -148,4 +99,24 @@ end
 		norm_cast,
 		rw [nat.div_mul_cancel (nat.pow_count_factors_dvd _ _)] },
 
+	{ -- Show that 0 < n
+		apply list_lcm_pos, intros n hn,
+		simp at hn, rcases hn with ⟨φ, p, k, hpk, hφn⟩,
+		rcases subtype.coe_eq_iff.mp hφn with ⟨⟨hpos, _⟩, _⟩,
+		exact hpos }, split,
+
+	{ -- Show that the constructed polynomial is homogeneous		
+		dsimp,
+		convert is_homogeneous.zip_with_mul_sum_homogeneous bezout_p ψs 0 K _ _, { simp },
+		{	intros φ hφ, rw [list.mem_map] at hφ,
+			rcases hφ with ⟨a, _, rfl⟩,
+			apply is_homogeneous_C },
+		intros φ' hφ', simp [ψs, φs] at hφ',
+		rcases hφ' with ⟨φ, n, ⟨p, k, hpk, hφ⟩, rfl⟩,
+		rcases subtype.coe_eq_iff.mp hφ with ⟨⟨_, hhom, _⟩, _⟩,
+		convert @is_homogeneous.pow _ _ _ φ n hhom _,
+		rw [nat.mul_comm, nat.div_mul_cancel _],
+		convert list_dvd_lcm _ n _,
+		simp only [list.mem_pmap, list.mem_map, exists_eq_right, prod.exists],
+		use [φ, p, k, hpk, hφ] },
 -/
