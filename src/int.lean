@@ -1,4 +1,5 @@
 import data.int.gcd
+import data.int.modeq
 import tactic
 
 namespace int

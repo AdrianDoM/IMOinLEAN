@@ -1,12 +1,13 @@
 import data.list.basic
 import data.list.erase_dup
+import data.list.zip
 import data.nat.gcd
 import algebra.euclidean_domain
 import nat
 
 namespace list
 
-variable {α : Type*}
+variables {α β γ δ ε : Type*}
 
 lemma exists_mem_of_ne_nil {l : list α} (h : l ≠ nil) : ∃ a, a ∈ l :=
 begin
@@ -49,6 +50,45 @@ end
 lemma erase_dup_ne_nil [decidable_eq α] {l : list α} :
 	l ≠ nil ↔ l.erase_dup ≠ nil :=
 not_iff_not.mpr erase_dup_eq_nil.symm
+
+/- data/list/zip.lean -/
+
+theorem zip_with_assoc {f : α → α → α} (hf : ∀ a b c, f (f a b) c = f a (f b c)) :
+	∀ (r s t), zip_with f (zip_with f r s) t = zip_with f r (zip_with f s t)
+| [] s  t  := rfl
+| r  [] t  := by simp only [zip_with_nil_left, zip_with_nil_right]
+| r  s  [] := by simp only [zip_with_nil_right]
+| (a::r) (b::s) (c::t) := by simp only [zip_with_cons_cons];
+	{ split, { apply hf }, apply zip_with_assoc }
+
+theorem zip_with_comm {f : α → α → β} (hf : ∀ a b, f a b = f b a) :	∀ (s t),
+	zip_with f s t = zip_with f t s
+| [] t  := by simp only [zip_with_nil_left, zip_with_nil_right]
+| s  [] := by simp only [zip_with_nil_left, zip_with_nil_right]
+| (a::s) (b::t) := by { simp only [zip_with_cons_cons], use hf _ _, apply zip_with_comm }
+
+
+theorem map_zip_with {f : γ → δ} {g : α → β → γ} : ∀ (s : list α) (t : list β),
+	map f (zip_with g s t) = zip_with (λ a b, f (g a b)) s t
+| [] t  := rfl
+| s  [] := by simp only [map_nil, zip_with_nil_right]
+| (a::s) (b::t) := by simp only [true_and, map, eq_self_iff_true, zip_with_cons_cons];
+	apply map_zip_with
+
+theorem zip_with_map {f : γ → δ → ε} {g : α → γ} {h : β → δ} : ∀ (s : list α) (t : list β),
+	zip_with f (map g s) (map h t) = zip_with (λ a b, f (g a) (h b)) s t
+| [] t  := rfl
+| s  [] := by simp only [map_nil, zip_with_nil_right]
+| (a::s) (b::t) := by simp only [true_and, map, eq_self_iff_true, zip_with_cons_cons];
+	apply zip_with_map
+
+theorem zip_with_map' {f : β → γ → δ} {g : α → β} {h : α → γ} : ∀ (l : list α),
+	zip_with f (map g l) (map h l) = map (λ a, f (g a) (h a)) l
+| [] := rfl
+| (a::l) := by simp only [true_and, map, eq_self_iff_true, zip_with_cons_cons];
+	apply zip_with_map'
+
+#check list.zip_map'
 
 end list
 

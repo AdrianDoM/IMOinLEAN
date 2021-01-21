@@ -6,12 +6,14 @@ variables {n a b : ℤ} {m : ℕ}
 
 namespace modeq
 
-theorem modeq_pow (h : a ≡ b [ZMOD n]) : a ^ m ≡ b ^ m [ZMOD n] :=
-begin
-  induction m with m ih, {refl},
-  rw [pow_succ, pow_succ],
-  exact modeq_mul h ih,
-end
+theorem modeq_pow {m a b : ℤ} (h : a ≡ b [ZMOD m]) :
+	∀ k : ℕ, a ^ k ≡ b ^ k [ZMOD m]
+| 0     := rfl
+| (n+1) := by rw [pow_succ, pow_succ]; apply modeq_mul h (modeq_pow n)
+
+theorem pow_modeq_one {m a : ℤ} (ha : a ≡ 1 [ZMOD m]) (k : ℕ) :
+	a ^ k ≡ 1 [ZMOD m] :=
+by rw [← one_pow k]; apply modeq_pow ha
 
 theorem is_coprime_of_modeq (hcop : is_coprime a n) (hmodeq : a ≡ b [ZMOD n]) :
   is_coprime b n :=
