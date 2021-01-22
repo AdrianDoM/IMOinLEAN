@@ -23,6 +23,21 @@ begin
   rwa [hx, is_coprime.add_mul_left_left_iff],
 end
 
+local notation ` ϕ ` := nat.totient
+
+lemma pow_totient {x : ℤ} {n : ℕ} (h : is_coprime x n) :
+  x ^ ϕ n ≡ 1 [ZMOD n] :=
+begin
+  cases n, { rw [nat.totient_zero, pow_zero] },
+  rcases @exists_unique_equiv_nat x ↑(n.succ) _ with ⟨y, hyn, hy⟩, swap,
+  { rw coe_nat_pos, apply nat.succ_pos },
+  apply modeq.trans (modeq_pow hy.symm _),
+  rw [← coe_nat_pow, ← int.coe_nat_one, int.modeq.coe_nat_modeq_iff],
+  apply nat.modeq.pow_totient,
+  rw ← nat.is_coprime_iff_coprime,
+  exact int.modeq.is_coprime_of_modeq h hy.symm,
+end
+
 end modeq
 
 theorem is_coprime_of_prime_not_dvd {p : ℕ} (hp : p.prime) : is_coprime a p ↔ ¬ ↑p ∣ a :=
@@ -43,19 +58,3 @@ begin
 end
 
 end int
-
-local notation ` ϕ ` := nat.totient
-
-lemma int.modeq.pow_totient {x : ℤ} {n : ℕ} (h : is_coprime x n) :
-  x ^ ϕ n ≡ 1 [ZMOD n] :=
-begin
-  cases n, {simp},
-  rcases @int.modeq.exists_unique_equiv_nat x ↑(n.succ) _ with ⟨y, hyn, hy⟩, swap,
-  { simp, linarith },
-  apply int.modeq.trans (int.modeq.modeq_pow hy.symm),
-  convert_to ↑(y ^ n.succ.totient) ≡ ↑1 [ZMOD ↑(n.succ)], {simp},
-  rw int.modeq.coe_nat_modeq_iff,
-  apply nat.modeq.pow_totient,
-  rw ←nat.is_coprime_iff_coprime,
-  exact int.modeq.is_coprime_of_modeq h hy.symm,
-end

@@ -1,6 +1,7 @@
 import data.nat.prime
 import data.nat.totient
 import data.list.basic
+import data.nat.gcd
 import list
 
 namespace nat
@@ -48,25 +49,25 @@ begin
 	{	intros l hl p hp,
 		induction l with hd tl ih,
 		{ intros k hk hdvd,
-			simp at *,
+			rw [list.count_nil] at hk,
+			rw [list.prod_nil, nat.dvd_one] at hdvd,
 			have := pow_lt_pow (prime.one_lt hp) hk,
-			simp [hdvd] at this,
+			rw [hdvd, pow_zero] at this,
 			exact (lt_irrefl 1) this },
 		intros k hk hdvd,
 		have hkpos : 0 < k := lt_of_le_of_lt (zero_le _) hk,
-		simp [list.count_cons] at hk,
-		split_ifs at hk,
+		rw [list.count_cons] at hk,	split_ifs at hk,
 		{ rw [← h, list.prod_cons, ← succ_pred_eq_of_pos hkpos, pow_succ] at hdvd,
 			cases hdvd with w hw,
 			rw [mul_assoc, mul_eq_mul_left_iff] at hw,
-			cases hw with h1 h2, swap,
-			{	exact (prime.ne_zero hp) h2 },
+			cases hw with h1 h2, swap, { exact (prime.ne_zero hp) h2 },
 			apply ih (λ x hx, hl x (by simp [hx])) k.pred (lt_pred_iff.mpr hk),
 			use [w, h1] },
 		rw [list.prod_cons] at hdvd,
 		apply ih (λ x hx, hl x (by simp [hx])) k hk,
-		cases hdvd with w hw,
-		sorry },
+		apply coprime.dvd_of_dvd_mul_left _ hdvd,
+		rw [← pow_one hd], apply coprime.pow,
+		rwa coprime_primes hp (hl hd (by simp)) },
 	have prod := prod_factors hn,
 	conv in (¬ _ ∣ n) { rw ← prod },
 	apply aux n.factors (λ x, mem_factors) p hp,
