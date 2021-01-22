@@ -23,7 +23,4 @@ begin
 	apply nat.le_of_dvd (nat.pos_of_ne_zero hmn.2) (gcd_dvd_right _ _),
 end
 
-#check nat.le_of_dvd
-#check succ_le_of_lt
-
 end nat

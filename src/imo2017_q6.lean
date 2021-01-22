@@ -98,7 +98,7 @@ end
 /-- If a homogeneous polynomial φ evaluates to an integer a at some (x, y), then it evaluates
 to ±a at (-x, -y). This shows that it is enough to consider a set S where no two primitive roots
 are multiples of each other -/
-lemma eval_pm_of_homogeneous_at_neg {φ : polyℤ} {n : ℕ} {xy : fin 2 → ℤ}
+lemma eval_pm_of_homogeneous_at_neg {φ : polyℤ} {n : ℕ} (xy : fin 2 → ℤ)
 	(hφ : is_homogeneous φ n) :
 	eval (λ i, - xy i) φ = eval xy φ ∨ eval (λ i, - xy i) φ = - eval xy φ :=
 begin
@@ -139,32 +139,25 @@ begin
 	show (-p).2 = -p.2, simp,
 end
 
-def sol_aux (T : set (ℤ × ℤ)) (φ : polyℤ) : Prop :=
-(∃ n, is_homogeneous φ n) ∧ ∀ t ∈ T, eval (to_val t) φ = 1 ∨ eval (to_val t) φ = -1
-
-def sol (T : set (ℤ × ℤ)) (φ : polyℤ) : Prop :=
-(∃ n, is_homogeneous φ n) ∧ ∀ t ∈ T, eval (to_val t) φ = 1
-
-theorem sol_aux_of_T {S T : set (ℤ × ℤ)} (hS : ∀ s ∈ S, primitive_root s) 
-	(hT : ∀ s ∈ S, ∃ (t ∈ T) (n : ℤ), s = n • t)
-	{φ : polyℤ} (hφ : sol_aux T φ) : sol_aux S φ :=
+def solution_of_minimal_set_solution {S T : finset (ℤ × ℤ)} (hS : ∀ s ∈ S, primitive_root s)
+	(hT : ∀ s ∈ S, ∃ (t ∈ T) (n : ℤ), s = n • t) :
+	{ φn : polyℤ × ℕ // 0 < φn.2 ∧ φn.1.is_homogeneous φn.2 ∧ 
+		∀ t ∈ T, eval (to_val t) φn.1 = 1 } →
+	{ φn : polyℤ × ℕ // 0 < φn.2 ∧ φn.1.is_homogeneous φn.2 ∧
+		∀ s ∈ S, eval (to_val s) φn.1 = 1 } :=
+λ ⟨φn, h⟩, ⟨⟨φn.1 ^ 2, φn.2 * 2⟩,
+	nat.mul_pos h.1 (nat.succ_pos 1),
+	by apply h.2.1.pow 2,
+	λ s hs,
 begin
-	rcases hφ with ⟨⟨m, hhom⟩, hφT⟩,
-	use ⟨m, hhom⟩,
-	intros s hs,
-	rcases hT s hs with ⟨t, ht, n, hn⟩,
-	rcases (@primitive_root.of_mul_primitive t n $ hn ▸ hS s hs).2 with rfl | rfl,
-	{	simp at hn, rw hn, exact hφT t ht },
-	simp at hn, rw [hn, to_val_neg],
-	cases hφT t ht with h1 hn1,
-	{	rw ← h1, apply eval_pm_of_homogeneous_at_neg hhom },
-	rw [← hn1, ← neg_neg (1 : ℤ), ← hn1, or_comm],
-	apply eval_pm_of_homogeneous_at_neg hhom,
-end
-
-theorem sol_of_sol_aux {T : set (ℤ × ℤ)} {φ : polyℤ} :
-	sol_aux T φ → sol T (φ * φ) :=
-λ ⟨⟨n, hhom⟩, h⟩, ⟨⟨n + n, is_homogeneous.mul hhom hhom⟩, λ t ht, sq_eq_one (h t ht)⟩
+	rcases hT s hs with ⟨t, ht, n, rfl⟩,
+	rcases primitive_root.of_mul_primitive (hS _ hs) with ⟨htprim, rfl | rfl⟩,
+	{	rw [one_smul, eval_pow, h.2.2 t ht, one_pow] },
+	rw [neg_one_smul, to_val_neg, eval_pow],
+	rcases eval_pm_of_homogeneous_at_neg (to_val t) h.2.1 with h1 | hn1,
+	{ rw [h1, h.2.2 t ht, one_pow] },
+	simp [hn1, h.2.2 t ht],
+end⟩
 
 /- From the past two theorems, we deduce that there is no harm in assuming that S has no
 primitive roots that are multiples of another primitive root in S. Moreover, it suffices
@@ -172,10 +165,10 @@ to find a polynomial that evaluates to 1 or -1 at each point in S. The next theo
 us extract such a subset from any S. -/
 
 theorem minimal_primitive_root_set {S : finset (ℤ × ℤ)} (hS : ∀ s ∈ S, primitive_root s) :
-	∃ T : finset (ℤ × ℤ), T ⊆ S ∧ (∀ t ∈ T, primitive_root t) ∧
-	(∀ t₁ t₂ ∈ T, (∃ n : ℤ, t₂ = n • t₁) → t₂ = t₁) ∧ (∀ s ∈ S, ∃ (t ∈ T) (n : ℤ), s = n • t) :=
+	{ T : finset (ℤ × ℤ) // T ⊆ S ∧ (∀ t ∈ T, primitive_root t) ∧
+	(∀ t₁ t₂ ∈ T, (∃ n : ℤ, t₂ = n • t₁) → t₂ = t₁) ∧ (∀ s ∈ S, ∃ (t ∈ T) (n : ℤ), s = n • t) } :=
 begin
-	apply S.induction_on',
+	apply classical.subtype_of_exists, apply S.induction_on',
 	{	use ∅, simp },
 	rintros a R haS hR hanR ⟨T, hTR, hTprim, hTmul, hT⟩,
 	by_cases h : ∃ (r ∈ R) (n : ℤ), a = n • r,
@@ -296,9 +289,10 @@ begin
 	rw l_zero_iff S hSprim hSmul ht ht,
 end
 
-lemma exists_degree_ge {s : ℤ × ℤ} (hs : s ∈ S) {n : ℕ} (hn : S.card - 1 ≤ n) :
-	∃ φ : polyℤ, φ.is_homogeneous n ∧ ∀ t ∈ S, eval (to_val t) φ = 0 ↔ t ≠ s :=
+lemma g_degree_ge {s : ℤ × ℤ} (hs : s ∈ S) {n : ℕ} (hn : S.card - 1 ≤ n) :
+	{ φ : polyℤ // φ.is_homogeneous n ∧ ∀ t ∈ S, eval (to_val t) φ = 0 ↔ t ≠ s } :=
 begin
+	apply classical.subtype_of_exists,
 	rcases exists_eval_one (hSprim s hs) with ⟨ψ, hψhom, hψeval⟩,
 	use ψ ^ (n - (S.card - 1)) * g S s,
 	split,

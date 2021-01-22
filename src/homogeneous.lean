@@ -16,6 +16,15 @@ begin
 	simp [nat.mul_comm],
 end
 
+lemma multiset_sum (s : multiset (mv_polynomial σ R)) (n : ℕ) :
+	(∀ φ ∈ s, is_homogeneous φ n) → is_homogeneous s.sum n :=
+begin
+	apply multiset.induction_on s, { simp [is_homogeneous_zero] },
+	intros ψ s ih h, rw multiset.sum_cons,
+	apply (h ψ (multiset.mem_cons_self _ _)).add (ih _),
+	intros φ hφ, apply h φ (multiset.mem_cons_of_mem hφ),
+end
+
 lemma list_sum (l : list (mv_polynomial σ R)) (n : ℕ)	(h : ∀ φ ∈ l, is_homogeneous φ n) :
 	is_homogeneous l.sum n :=
 begin

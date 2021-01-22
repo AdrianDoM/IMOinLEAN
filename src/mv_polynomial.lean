@@ -22,6 +22,10 @@ theorem eval_mul (f g : mv_polynomial σ R) (x : σ → R) : eval x (f * g) = ev
 theorem eval_pow (f : mv_polynomial σ R) (n : ℕ) (x : σ → R) : eval x (f ^ n) = eval x f ^ n :=
 (eval x).map_pow _ _
 
+theorem eval_multiset_sum (s : multiset (mv_polynomial σ R)) (g : σ → R) :
+	eval g (s.sum) = (s.map (eval g)).sum :=
+(eval g).map_multiset_sum _
+
 theorem eval_list_sum (l : list (mv_polynomial σ R)) (g : σ → R) :
 	eval g (l.sum) = (l.map (eval g)).sum :=
 (eval g).map_list_sum _

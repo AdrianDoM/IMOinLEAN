@@ -88,11 +88,9 @@ theorem zip_with_map' {f : β → γ → δ} {g : α → β} {h : α → γ} : �
 | (a::l) := by simp only [true_and, map, eq_self_iff_true, zip_with_cons_cons];
 	apply zip_with_map'
 
-#check list.zip_map'
-
 end list
 
-lemma list_gcd_eq_zero {l : list ℤ} :
+lemma int.list_gcd_eq_zero {l : list ℤ} :
 	l.foldr euclidean_domain.gcd 0 = 0 ↔ ∀ n ∈ l, n = (0 : ℤ) :=
 begin
 	split,
@@ -107,7 +105,7 @@ begin
 	exact ⟨h hd (by simp), ih (λ n hn, h n (by simp [hn]))⟩,
 end
 
-lemma list_gcd_dvd {l : list ℤ} (a : ℤ):
+lemma int.list_gcd_dvd {l : list ℤ} (a : ℤ):
 	∀ x ∈ l, l.foldr euclidean_domain.gcd a ∣ x :=
 begin
 	induction l with hd tl ih generalizing a, { simp },
@@ -118,7 +116,21 @@ begin
 	apply dvd.trans (euclidean_domain.gcd_dvd_right _ _) (ih a x hxtl),
 end
 
-lemma list_dvd_lcm (l : list ℕ) : ∀ x ∈ l, x ∣ l.foldr nat.lcm 1 :=
+lemma int.list_lcm_ne_zero : ∀ (l : list ℤ),
+	(∀ x : ℤ, x ∈ l → x ≠ 0) ↔ l.foldr euclidean_domain.lcm 1 ≠ 0 :=
+begin
+	intro l, induction l with x l ih, { simp }, split,
+	{	intros hl h0, rw [list.foldr_cons, euclidean_domain.lcm_eq_zero_iff] at h0,
+		cases h0, { apply hl x (list.mem_cons_self _ _) h0 },
+		apply ih.mp (λ x hx, hl x (list.mem_cons_of_mem _ hx)) h0 },
+	intros h0 y hy, rw list.mem_cons_iff at hy,
+	simp [list.foldr_cons, not_iff_not.mpr euclidean_domain.lcm_eq_zero_iff] at h0,
+	push_neg at h0,
+	rcases hy with rfl | hy, { exact h0.1 },
+	exact ih.mpr h0.2 y hy,
+end
+
+lemma nat.list_dvd_lcm (l : list ℕ) : ∀ x ∈ l, x ∣ l.foldr nat.lcm 1 :=
 begin
 	induction l with hd tl ih, { simp },
 	intros x hx, rw list.foldr_cons,
@@ -129,7 +141,7 @@ begin
 	apply nat.dvd_lcm_right, 
 end
 
-lemma list_lcm_pos {l : list ℕ} : (∀ x ∈ l, 0 < x) → 0 < l.foldr nat.lcm 1 :=
+lemma nat.list_lcm_pos {l : list ℕ} : (∀ x ∈ l, 0 < x) → 0 < l.foldr nat.lcm 1 :=
 begin
 	induction l with hd tl ih, { simp },
 	intro h, rw list.foldr_cons,
@@ -140,5 +152,3 @@ begin
 	apply ne_of_lt (ih _) h0.symm,
 	intros x hx, exact h x (by simp [hx]),
 end
-
-#check not_iff
