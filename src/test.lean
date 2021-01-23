@@ -35,7 +35,9 @@ begin
 	-- ψn.1 - map
 	use ψm.val.1 ^ k +
 		(T.val.pmap
-			(λ t ht, C ((eval (to_val t) (ψm.val.1 ^ k) - 1) / eval (to_val t) (g T t)) * (@g_degree_ge T hT hTind t ht _ hk).val)
+			(λ t ht, C 
+				((1 - eval (to_val t) (ψm.val.1 ^ k)) / eval (to_val t) (g T t)) *
+				(@g_degree_ge T hT hTind t ht _ hk).val )
 			(λ _ x, x)).sum,
 	use ψm.val.2 * k, split,
 	{	exact nat.mul_pos ψm.property.1 (nat.succ_pos _) }, split,
@@ -49,8 +51,14 @@ begin
 	intros t ht, rw [eval_add, eval_multiset_sum, map_pmap],
 	simp only [eval_mul, eval_C],
 	conv in (T.val) { rw ← cons_erase (finset.mem_def.mp ht) },
-	rw [pmap_cons, sum_cons, ← add_assoc],
+	rw [pmap_cons, sum_cons, ← add_assoc, (@g_degree_ge T hT hTind t ht _ hk).property.2 t ht],
+	rw [int.div_mul_cancel _, add_sub_cancel'_right], swap,
+	{ apply dvd.trans (ha _ ht) (modeq.modeq_iff_dvd.mp _), rw [eval_pow],
+		apply modeq.pow_modeq_one (ψm.property.2.2 _ (hT _ ht)) },
+	convert int.add_zero 1, apply sum_eq_zero_of_all_zero,
+	intros x hx, rcases mem_pmap.mp hx with ⟨s, hs, rfl⟩,
+	have hsT := finset.mem_def.mpr (mem_of_mem_erase hs),
+	convert mul_zero _,
+	rw [(@g_degree_ge T hT hTind _ hsT _ hk).property.2 t ht, g_zero_iff T hT hTind hsT ht],
+	symmetry, apply finset.ne_of_mem_erase hs,
 end
-
-#check pmap
-#check finset.mem_def

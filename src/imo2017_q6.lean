@@ -18,6 +18,7 @@ import coprime
 import prime
 import modeq
 import bezout
+import multiset
 
 /-!
 # IMO 2017 Q6
@@ -31,7 +32,7 @@ positive integer n and integers a₀, a₁, ..., aₙ such that, for each (x,y) 
 
 noncomputable theory
 
-open mv_polynomial (hiding X) int (hiding range) finset
+open mv_polynomial (hiding X) int (hiding range)
 open_locale big_operators
 
 /-- An ordered pair (x,y) of integers is a primitive root of the greatest commond divisor
@@ -159,10 +160,9 @@ begin
 	simp [hn1, h.2.2 t ht],
 end⟩
 
-/- From the past two theorems, we deduce that there is no harm in assuming that S has no
-primitive roots that are multiples of another primitive root in S. Moreover, it suffices
-to find a polynomial that evaluates to 1 or -1 at each point in S. The next theorem lets
-us extract such a subset from any S. -/
+section finset
+
+open finset
 
 theorem minimal_primitive_root_set {S : finset (ℤ × ℤ)} (hS : ∀ s ∈ S, primitive_root s) :
 	{ T : finset (ℤ × ℤ) // T ⊆ S ∧ (∀ t ∈ T, primitive_root t) ∧
@@ -174,7 +174,7 @@ begin
 	by_cases h : ∃ (r ∈ R) (n : ℤ), a = n • r,
 	{	use [T, subset.trans hTR (subset_insert _ _), hTprim, hTmul],
 		intros a ha,
-		rcases mem_insert.mp ha with rfl | ha, swap,
+		rcases finset.mem_insert.mp ha with rfl | ha, swap,
 		{	exact hT a ha },
 		rcases h with ⟨r, hr, n, hn⟩,
 		rcases hT r hr with ⟨t, ht, m, hm⟩,
@@ -205,11 +205,20 @@ begin
 	rcases primitive_root.of_mul_primitive (hTprim _ ht₂') with ⟨_, rfl | rfl⟩; simp,
 end
 
+end finset
+
+/- From the past two theorems, we deduce that there is no harm in assuming that S has no
+primitive roots that are multiples of another primitive root in S. Moreover, it suffices
+to find a polynomial that evaluates to 1 or -1 at each point in S. The next theorem lets
+us extract such a subset from any S. -/
+
 /-- Convenient names for the two variables in an xy_poly -/
 def X : polyℤ := mv_polynomial.X 0
 def Y : polyℤ := mv_polynomial.X 1
 
 section reduced
+
+open finset
 
 variable S : finset (ℤ × ℤ)
 variable hSprim : ∀ s ∈ S, primitive_root s
@@ -290,7 +299,7 @@ begin
 end
 
 lemma g_degree_ge {s : ℤ × ℤ} (hs : s ∈ S) {n : ℕ} (hn : S.card - 1 ≤ n) :
-	{ φ : polyℤ // φ.is_homogeneous n ∧ ∀ t ∈ S, eval (to_val t) φ = 0 ↔ t ≠ s } :=
+	{ φ : polyℤ // φ.is_homogeneous n ∧ ∀ t ∈ S, eval (to_val t) φ = eval (to_val t) (g S s) } :=
 begin
 	apply classical.subtype_of_exists,
 	rcases exists_eval_one (hSprim s hs) with ⟨ψ, hψhom, hψeval⟩,
@@ -300,14 +309,10 @@ begin
 		{ rw nat.sub_add_cancel hn },
 		conv { congr, skip, rw ← nat.one_mul (n - _)},
 		apply is_homogeneous.pow hψhom },
-	intros t ht,
-	rw [eval_mul, mul_eq_zero, g_zero_iff S hSprim hSmul hs ht],
-	split, swap,
-	{	intro h, right, exact h },
-	rintros h rfl, cases h with h1 h2, swap,
-	{	contradiction },
-	rw [eval_pow, hψeval, one_pow] at h1,
-	norm_num at h1,
+	intros t ht, rw [eval_mul, eval_pow],
+	by_cases hts : t = s,
+	{	rw [hts, hψeval, one_pow, one_mul] },
+	rw [(g_zero_iff S hSprim hSmul hs ht).mpr hts, mul_zero],
 end
 omit hSprim hSmul
 
@@ -553,3 +558,56 @@ begin
 end
 
 end reduced
+
+open multiset
+
+def solution (S : finset (ℤ × ℤ)) (hS : ∀ t ∈ S, primitive_root t) :
+	{ φn : polyℤ × ℕ // 0 < φn.2 ∧ φn.1.is_homogeneous φn.2 ∧ 
+		∀ t ∈ S, eval (to_val t) φn.1 = 1 } :=
+begin
+	rcases minimal_primitive_root_set hS with ⟨T, hTS, hT, hTind, hTspan⟩,
+	apply solution_of_minimal_set_solution hS hTspan,
+	let a := (T.val.map (λ t, eval (to_val t) (g T t))).lcm.nat_abs,
+	have ha : ∀ t ∈ T, eval (to_val t) (g T t) ∣ a :=
+		λ t ht, dvd_nat_abs.mpr (dvd_lcm $ mem_map.mpr ⟨t, finset.mem_def.mp ht, rfl⟩),
+	-- ψn.val.1 is a homogeneous polynomial that evaluates to 1 [ZMOD a] at any primitive root
+	let ψm := @homogeneous_one_at_coprime a _, swap,
+	{	apply nat_abs_pos_of_ne_zero, rw lcm_ne_zero_iff,
+		intros x hx hg, rw mem_map at hx,
+		rcases hx with ⟨y, hy, rfl⟩,
+		rw g_zero_iff T hT hTind hy hy at hg, exact hg (eq.refl y) },
+	let k := T.card / ψm.val.2 + 1,
+	have hk : ψm.val.2 * k ≥ T.card - 1,
+	{	apply nat.le_of_lt (nat.lt_of_le_of_lt (nat.pred_le T.card) _), rw mul_comm,
+		exact nat.lt_mul_of_div_lt (nat.lt_succ_self _) ψm.property.1, },
+	-- we construct our polynomial by subtracting the appropriate multiples of the g's from ψn.1
+	-- ψn.1 - map
+	use ψm.val.1 ^ k +
+		(T.val.pmap
+			(λ t ht, C 
+				((1 - eval (to_val t) (ψm.val.1 ^ k)) / eval (to_val t) (g T t)) *
+				(@g_degree_ge T hT hTind t ht _ hk).val )
+			(λ _ x, x)).sum,
+	use ψm.val.2 * k, split,
+	{	exact nat.mul_pos ψm.property.1 (nat.succ_pos _) }, split,
+	{ apply is_homogeneous.add (is_homogeneous.pow ψm.property.2.1 _),
+		apply is_homogeneous.multiset_sum, intros φ hφ,
+		rcases mem_pmap.mp hφ with ⟨t, ht, rfl⟩,
+		convert is_homogeneous.mul
+			(is_homogeneous_C _ _)
+			(@g_degree_ge T hT hTind t ht _ hk).property.1,
+		rw zero_add },
+	intros t ht, rw [eval_add, eval_multiset_sum, map_pmap],
+	simp only [eval_mul, eval_C],
+	conv in (T.val) { rw ← cons_erase (finset.mem_def.mp ht) },
+	rw [pmap_cons, sum_cons, ← add_assoc, (@g_degree_ge T hT hTind t ht _ hk).property.2 t ht],
+	rw [int.div_mul_cancel _, add_sub_cancel'_right], swap,
+	{ apply dvd.trans (ha _ ht) (modeq.modeq_iff_dvd.mp _), rw [eval_pow],
+		apply modeq.pow_modeq_one (ψm.property.2.2 _ (hT _ ht)) },
+	convert int.add_zero 1, apply sum_eq_zero_of_all_zero,
+	intros x hx, rcases mem_pmap.mp hx with ⟨s, hs, rfl⟩,
+	have hsT := finset.mem_def.mpr (mem_of_mem_erase hs),
+	convert mul_zero _,
+	rw [(@g_degree_ge T hT hTind _ hsT _ hk).property.2 t ht, g_zero_iff T hT hTind hsT ht],
+	symmetry, apply finset.ne_of_mem_erase hs,
+end
