@@ -1,20 +1,22 @@
 import algebra.punit_instances
+import algebra.category.Group
 import group_theory.subgroup
+import group_theory.quotient_group
 import .subgroup
 
 open subgroup monoid_hom
 
 structure normal_embedding (G H : Type*) [group G] [group H]
-  extends f : monoid_hom G H :=
-(inj : function.injective f.to_fun)
-(norm : f.range.normal)
+  extends φ : monoid_hom G H :=
+(inj : function.injective φ.to_fun)
+(norm : φ.range.normal)
 
 namespace normal_embedding
 
 variables {G H K : Type*} [group G] [group H] [group K]
 
 /- Coerce a normal embedding to a group homomorphism -/
-instance : has_coe (normal_embedding G H) (G →* H) := ⟨normal_embedding.f⟩
+instance : has_coe (normal_embedding G H) (G →* H) := ⟨normal_embedding.φ⟩
 
 /- The unique normal embedding from the trivial group to any group -/
 protected def from_punit : normal_embedding punit G :=
@@ -37,8 +39,7 @@ def comp_mul_equiv (f : normal_embedding G H) (h : H ≃* K) : normal_embedding 
     rw [← map_map, ← range_eq_map], refl
   end⟩
 
--- f(G) is normal → (h⁻¹)⁻¹(f(G)) is normal
-
-#check comap
+instance group_quotient (f : normal_embedding G H) : group (quotient_group.quotient f.φ.range) :=
+  sorry -- apply the instance from quotient_group
 
 end normal_embedding

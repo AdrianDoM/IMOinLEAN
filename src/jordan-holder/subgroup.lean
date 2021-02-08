@@ -1,5 +1,4 @@
 import group_theory.subgroup
-import ring_theory.subring
 
 namespace subgroup
 
@@ -12,12 +11,18 @@ lemma map_eq_comap_of_inverse {f : G →* H} {g : H →* G} (hl : function.left_
   (hr : function.right_inverse g f) (K : subgroup G) : map f K = comap g K :=
 ext' $ by rw [coe_map, coe_comap, set.image_eq_preimage_of_inverse hl hr]
 
-lemma map_comp {f : G →* H} {g : H →* K} (G' : subgroup G) :
-  map (g.comp f) G' = map g (map f G') := by library_search
+lemma map_comap_eq {f : G →* H} (hf : function.surjective f) (K : subgroup H) :
+  map f (comap f K) = K :=
+ext' $ by rw [coe_map, coe_comap, set.image_preimage_eq ↑K hf]
+
+instance normal_inf (H N : subgroup G) [hN : N.normal] : ((H ⊓ N).comap H.subtype).normal :=
+⟨λ x hx g, begin
+  simp only [mem_inf, coe_subtype, mem_comap] at hx,
+  simp only [coe_mul, mem_inf, coe_subtype, coe_inv, mem_comap],
+  exact ⟨H.mul_mem (H.mul_mem g.2 hx.1) (H.inv_mem g.2), hN.1 x hx.2 g⟩,
+end⟩
 
 end subgroup
-
-#check set.image
 
 namespace monoid_hom
 
