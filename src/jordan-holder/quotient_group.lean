@@ -5,9 +5,20 @@ open subgroup monoid_hom
 
 namespace quotient_group
 
-section snd_isomorphism_theorem
-
 variables {G : Type*} [group G]
+
+/- If two normal subgroups `M` and `N` of `G` are the same, their quotient groups are isomorphic. -/
+lemma equiv_quotient_of_eq {M N : subgroup G} [M.normal] [N.normal] :
+  M = N → quotient M ≃* quotient N :=
+λ h, {
+  to_fun := (lift M (mk' N) (λ m hm, quotient_group.eq.mpr (by simpa [← h] using M.inv_mem hm))),
+  inv_fun := (lift N (mk' M) (λ n hn, quotient_group.eq.mpr (by simpa [← h] using N.inv_mem hn))),
+  left_inv := λ x, x.induction_on' $ by { intro, refl },
+  right_inv := λ x, x.induction_on' $ by { intro, refl },
+  map_mul' := λ x y, by rw map_mul,
+}
+
+section snd_isomorphism_theorem
 
 def φ (H N : subgroup G) [N.normal] : H →* quotient (N.comap (H.prod_normal N).subtype) :=
 (mk' $ N.comap (H.prod_normal N).subtype).comp (inclusion le_prod_normal_left)
@@ -28,7 +39,9 @@ end
 is normal, defines an isomorphism between `H/(H ∩ N)` and `(HN)/N`. -/
 noncomputable def quotient_inf_equiv_prod_normal_quotient (H N : subgroup G) [N.normal] :
   quotient ((H ⊓ N).comap H.subtype) ≃* quotient (N.comap (H.prod_normal N).subtype) :=
-quotient_ker_equiv_of_surjective (φ H N) φ_surjective
+mul_equiv.trans (equiv_quotient_of_eq ker_φ.symm)
+  (quotient_ker_equiv_of_surjective (φ H N) φ_surjective)
+
 
 
 #check Prop
