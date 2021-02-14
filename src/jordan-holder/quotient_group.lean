@@ -18,10 +18,14 @@ lemma equiv_quotient_of_eq {M N : subgroup G} [M.normal] [N.normal] :
   map_mul' := λ x y, by rw map_mul,
 }
 
+lemma foo {M N : subgroup G} [M.normal] [N.normal] (h : M = N) : quotient M = quotient N :=
+by rw h
+
 /- The second isomorphism theorem: given two subgroups `H` and `N` of a group `G`, where `N`
 is normal, defines an isomorphism between `H/(H ∩ N)` and `(HN)/N`. -/
 noncomputable def quotient_inf_equiv_prod_normal_quotient (H N : subgroup G) [N.normal] :
   quotient ((H ⊓ N).comap H.subtype) ≃* quotient (N.comap (H ⊔ N).subtype) :=
+/- φ is the obvious homomorphism H →* (HN)/N. -/
 let φ : H →* quotient (N.comap (H ⊔ N).subtype) :=
   (mk' $ N.comap (H ⊔ N).subtype).comp (inclusion le_sup_left) in
 have φ_surjective : function.surjective φ := λ x, x.induction_on' $
