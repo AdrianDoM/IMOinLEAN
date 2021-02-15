@@ -1,6 +1,6 @@
 import category_theory.isomorphism_classes
 import group_theory.quotient_group
-import .subgroup .normal_embedding .simple_group .trivial_class .quotient_group
+import .subgroup .normal_embedding .simple_group .trivial_class .quotient_group .fingroup
 
 universe u
 
@@ -37,29 +37,36 @@ def composition_series (G : Group.{u}) : Type (u+1) :=
 def join {N : subgroup G} [hN : N.normal] : composition_series (Group.of N) →
   composition_series (Group.of $ quotient_group.quotient N) → composition_series G := sorry
 
-variables [hG : fintype G]
 
 local attribute [instance] classical.prop_decidable
+
+variables [hG : fintype G]
 
 /- Jordan-Hölder 1. Every finite group has a composition series. -/
 noncomputable def exists_composition_series_of_finite :
   composition_series G :=
 suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G),
-  @fintype.card ↥G hG = n → composition_series G,
-  from h hG.card G hG rfl,
-λ n, n.strong_rec_on $ λ n ih G hG hn, begin
+  @fintype.card G hG = n → composition_series G,
+  from h (@fintype.card G hG) G hG rfl,
+λ N, N.strong_rec_on $ begin
+  intros n ih H, introI hH, intro hn,
   apply classical.subtype_of_exists,
-  by_cases h1 : subsingleton G,
+  by_cases h1 : subsingleton H,
   { existsi trivial h1, intro, simp },
-  by_cases h2 : is_simple G,
+  by_cases h2 : is_simple H,
   { existsi normal_series.base h1,
     intros G' hG', simp at hG', simp [hG', quotient.lift_on'_mk'],
     exact ⟨h2, h1⟩ },
   rcases not_is_simple.mp h2 with ⟨N, hN, hNbot, hNtop⟩,
-  suffices s : composition_series G, from ⟨s.val, s.property⟩,
+  haveI := hN, -- Add N.normal to instance cache
+  suffices s : composition_series H, from ⟨s.val, s.property⟩,
   apply @join _ N hN,
-  { sorry },
-  sorry,
+  { apply ih (fintype.card N) (hn ▸ subgroup.card_lt hNtop),
+    { simp only [Group.coe_of, eq_self_iff_true] },
+    rw Group.coe_of, apply_instance },
+  apply ih (fintype.card $ quotient_group.quotient N) (hn ▸ subgroup.card_quotient_lt hNbot),
+  { simp only [Group.coe_of, eq_self_iff_true] },
+  rw Group.coe_of, apply_instance,
 end
 
 /- Jordan-Hölder 2. Any two composition series for `G` have the same factors. -/
