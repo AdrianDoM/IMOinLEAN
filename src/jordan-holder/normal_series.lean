@@ -42,6 +42,8 @@ local attribute [instance] classical.prop_decidable
 
 variables [hG : fintype G]
 
+-- set_option trace.class_instances true
+
 /- Jordan-Hölder 1. Every finite group has a composition series. -/
 noncomputable def exists_composition_series_of_finite :
   composition_series G :=
@@ -64,7 +66,8 @@ suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G),
   { apply ih (fintype.card N) (hn ▸ subgroup.card_lt hNtop),
     { simp only [Group.coe_of, eq_self_iff_true] },
     rw Group.coe_of, apply_instance },
-  apply ih (fintype.card $ quotient_group.quotient N) (hn ▸ quotient_group.card_quotient_lt hNbot),
+  apply ih (fintype.card $ quotient_group.quotient N),
+  { rw ←hn, apply quotient_group.card_quotient_lt hNbot },
   { simp only [Group.coe_of, eq_self_iff_true] },
   rw Group.coe_of, apply_instance,
 end

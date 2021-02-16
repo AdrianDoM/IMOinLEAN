@@ -40,6 +40,6 @@ def comp_mul_equiv (f : normal_embedding G H) (h : H ≃* K) : normal_embedding 
   end⟩
 
 instance group_quotient (f : normal_embedding G H) : group (quotient_group.quotient f.φ.range) :=
-  sorry -- apply the instance from quotient_group
+by haveI := f.norm; apply_instance
 
 end normal_embedding
