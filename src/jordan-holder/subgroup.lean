@@ -35,10 +35,17 @@ end subgroup
 
 namespace monoid_hom
 
-@[simp] lemma range_one {G H : Type*} [group G] [group H] : (1 : G →* H).range = ⊥ :=
+variables {G H : Type*} [group G] [group H]
+
+@[simp] lemma range_one : (1 : G →* H).range = ⊥ :=
 subgroup.ext $ λ x, ⟨
   λ ⟨y, hy⟩, subgroup.mem_bot.mpr (hy ▸ one_apply _),
   λ hx, ⟨1, (subgroup.mem_bot.mp hx).symm ▸ one_apply _⟩
 ⟩
+
+lemma injective_iff_ker_eq_bot (f : G →* H) : function.injective f ↔ f.ker = ⊥ :=
+iff.trans (injective_iff f)
+  ⟨λ h, le_antisymm (λ x hx, subgroup.mem_bot.mpr $ h x $ (mem_ker f).mp hx) bot_le,
+  λ h x hx, by { rwa [←mem_ker, h, subgroup.mem_bot] at hx }⟩
 
 end monoid_hom

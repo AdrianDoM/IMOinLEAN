@@ -7,6 +7,18 @@ namespace quotient_group
 
 variables {G : Type*} [group G]
 
+lemma subsingleton_of_subgroup_quotient_subsingleton {N : subgroup G} :
+  subsingleton N → subsingleton (quotient N) → subsingleton G :=
+λ hN hqN, @equiv.subsingleton G (quotient N × N) group_equiv_quotient_times_subgroup
+  (@subsingleton.prod _ _ hqN hN)
+
+lemma mk'_surjective {N : subgroup G} [N.normal] : function.surjective (mk' N) :=
+λ x, x.induction_on' $ by { intro a, use a, refl }
+
+noncomputable def quotient_bot : quotient (⊥ : subgroup G) ≃* G :=
+mul_equiv.symm $ mul_equiv.of_bijective (mk' ⊥)
+  ⟨by rw [injective_iff_ker_eq_bot, ker_mk], mk'_surjective⟩
+
 /- If two normal subgroups `M` and `N` of `G` are the same, their quotient groups are isomorphic. -/
 lemma equiv_quotient_of_eq {M N : subgroup G} [M.normal] [N.normal] :
   M = N → quotient M ≃* quotient N :=
@@ -17,9 +29,6 @@ lemma equiv_quotient_of_eq {M N : subgroup G} [M.normal] [N.normal] :
   right_inv := λ x, x.induction_on' $ by { intro, refl },
   map_mul' := λ x y, by rw map_mul,
 }
-
-lemma foo {M N : subgroup G} [M.normal] [N.normal] (h : M = N) : quotient M = quotient N :=
-by rw h
 
 /- The second isomorphism theorem: given two subgroups `H` and `N` of a group `G`, where `N`
 is normal, defines an isomorphism between `H/(H ∩ N)` and `(HN)/N`. -/

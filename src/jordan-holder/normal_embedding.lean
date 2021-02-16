@@ -19,9 +19,12 @@ variables {G H K : Type*} [group G] [group H] [group K]
 instance : has_coe (normal_embedding G H) (G →* H) := ⟨normal_embedding.φ⟩
 
 /- The unique normal embedding from the trivial group to any group -/
-protected def from_punit : normal_embedding punit G :=
-⟨1, λ _ _ _, subsingleton.elim _ _,
-  (@monoid_hom.range_one punit G _ _).symm ▸ subgroup.bot_normal⟩
+def from_subsingleton (hG : subsingleton G) (H : Type*) [group H] : normal_embedding G H :=
+⟨1, λ x y _, subsingleton.elim x y, (@monoid_hom.range_one G H _ _).symm ▸ subgroup.bot_normal⟩
+
+@[simp]
+lemma from_subsingleton_range (hG : subsingleton G) : (from_subsingleton hG H).φ.range = ⊥ :=
+le_antisymm (by { rintros x ⟨y, rfl⟩, rw [subsingleton.elim y 1, map_one, mem_bot] }) bot_le
 
 /- A group isomorphism induces a normal embedding -/
 def of_mul_equiv (h : G ≃* H) : normal_embedding G H :=
