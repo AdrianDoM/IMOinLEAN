@@ -27,11 +27,14 @@ def factors : Π {G : Group.{u}}, normal_series G → multiset (isomorphism_clas
 | _ (trivial _) := 0
 | _ (cons H G f s) := quotient.mk' (Group.of $ quotient_group.quotient f.φ.range) ::ₘ factors s
 
+example (N : subgroup G) [N.normal] : group (quotient_group.quotient N) := by { apply_instance } 
 
-def append {N : subgroup G} [hN : N.normal] : normal_series (Group.of N) →
+def append : Π {N : subgroup G} [N.normal], normal_series (Group.of N) →
   normal_series (Group.of $ quotient_group.quotient N) → normal_series G
-| (trivial hN) (trivial hqN) := trivial (subsingleton_of_subgroup_quotient_subsingleton hN hqN)
-| σ (cons K _ f τ) := sorry
+| (trivial h1) (trivial h2) := trivial (subsingleton_of_subgroup_quotient_subsingleton h1 h2)
+| (trivial h1) τ := sorry
+| σ (trivial h2) := sorry
+| σ τ := sorry
 
 /- A composition series is a normal series with simple and nontrivial factors. -/
 def composition_series (G : Group.{u}) : Type (u+1) :=
