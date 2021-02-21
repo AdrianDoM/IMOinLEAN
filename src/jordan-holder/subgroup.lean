@@ -16,21 +16,6 @@ lemma map_comap_eq {f : G →* H} (hf : function.surjective f) (K : subgroup H) 
   map f (comap f K) = K :=
 ext' $ by rw [coe_map, coe_comap, set.image_preimage_eq ↑K hf]
 
-instance normal_inf (H N : subgroup G) [hN : N.normal] : ((H ⊓ N).comap H.subtype).normal :=
-⟨λ x hx g, begin
-  simp only [mem_inf, coe_subtype, mem_comap] at hx,
-  simp only [coe_mul, mem_inf, coe_subtype, coe_inv, mem_comap],
-  exact ⟨H.mul_mem (H.mul_mem g.2 hx.1) (H.inv_mem g.2), hN.1 x hx.2 g⟩,
-end⟩
-
-/- The inclusion homomorphism from a subgroup `H` contained in `K` to `K`. -/
-def inclusion {H K : subgroup G} (h : H ≤ K) : H →* K :=
-monoid_hom.mk' (λ x, ⟨x, h x.prop⟩) (λ ⟨a, ha⟩  ⟨b, hb⟩, rfl)
-
-@[simp]
-lemma coe_inclusion {H K : subgroup G} {h : H ≤ K} (a : H) : (inclusion h a : G) = a :=
-by { cases a, simp only [inclusion, coe_mk, monoid_hom.coe_mk'] }
-
 end subgroup
 
 namespace monoid_hom
