@@ -42,7 +42,9 @@ def comp_mul_equiv (f : normal_embedding G H) (h : H ≃* K) : normal_embedding 
     rw [← map_map, ← range_eq_map], refl
   end⟩
 
-instance group_quotient (f : normal_embedding G H) : group (quotient_group.quotient f.φ.range) :=
-by haveI := f.norm; apply_instance
+def quotient (f : normal_embedding G H) : Type* := quotient_group.quotient f.φ.range
+
+instance group_quotient (f : normal_embedding G H) : group f.quotient :=
+by { haveI := f.norm, dsimp [quotient], apply_instance }
 
 end normal_embedding

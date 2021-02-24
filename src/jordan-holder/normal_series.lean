@@ -15,26 +15,26 @@ variables {G H K : Group.{u}}
 
 /- Given a normal series for G and an isomorphism G ≃* H, we can produce a normal series for H
 by changing the last step from going into G to go into H. -/
-def of_mul_equiv_right (h : G ≃* H) : normal_series G → normal_series H
+def of_mul_equiv (h : G ≃* H) : normal_series G → normal_series H
 | (trivial hG) := trivial $ @equiv.subsingleton.symm _ _ h.to_equiv hG
 | (cons K G f s) := cons K H (normal_embedding.comp_mul_equiv f h) s
 
-open category_theory quotient_group normal_embedding
+open category_theory quotient_group normal_embedding monoid_hom
 
 /- The factors of a normal series are the quotient groups of consecutive elements in the series. -/
 @[simp]
 def factors : Π {G : Group.{u}}, normal_series G → multiset (isomorphism_classes.obj $ Cat.of Group)
 | _ (trivial _) := 0
-| _ (cons H G f s) := quotient.mk' (Group.of $ quotient_group.quotient f.φ.range) ::ₘ factors s
+| _ (cons H G f s) := quotient.mk' (Group.of f.quotient) ::ₘ factors s
 
-example (N : subgroup G) [N.normal] : group (quotient_group.quotient N) := by { apply_instance } 
-
-def append : Π {N : subgroup G} [N.normal], normal_series (Group.of N) →
-  normal_series (Group.of $ quotient_group.quotient N) → normal_series G
-| (trivial h1) (trivial h2) := trivial (subsingleton_of_subgroup_quotient_subsingleton h1 h2)
-| (trivial h1) τ := sorry
-| σ (trivial h2) := sorry
-| σ τ := sorry
+def append : Π (f : normal_embedding H G),
+  normal_series H → normal_series (Group.of f.quotient) → normal_series G
+| f (trivial hH) (trivial hG) :=
+  trivial $ subsingleton_of_subgroup_quotient_subsingleton
+    (@monoid_hom.range_subsingleton _ _ _ _ ↑f hH) hG
+| f σ (trivial hG) := of_mul_equiv sorry σ
+| f (trivial hH) (cons K _ g s)   := sorry
+| f (cons _ _ _ _) (cons _ _ _ _) := sorry
 
 /- A composition series is a normal series with simple and nontrivial factors. -/
 def composition_series (G : Group.{u}) : Type (u+1) :=

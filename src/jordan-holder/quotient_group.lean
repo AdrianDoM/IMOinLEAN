@@ -19,4 +19,8 @@ noncomputable def quotient_bot : quotient (⊥ : subgroup G) ≃* G :=
 mul_equiv.symm $ mul_equiv.of_bijective (mk' ⊥)
   ⟨by rw [injective_iff_ker_eq_bot, ker_mk], mk'_surjective⟩
 
+variables {N : subgroup G} [normal N]
+
+noncomputable def quotient_subsingleton (h : subsingleton (quotient N)) : N ≃* G := sorry
+
 end quotient_group
