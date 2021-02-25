@@ -9,3 +9,7 @@ quotient.lift_on' C (λ (G : Group), subsingleton G)
   (λ G H ⟨h⟩, eq_iff_iff.mpr
     ⟨λ hG, @equiv.subsingleton.symm _ _ (iso.Group_iso_to_mul_equiv h).to_equiv hG,
     λ hH, @equiv.subsingleton _ _ (iso.Group_iso_to_mul_equiv h).to_equiv hH⟩)
+
+lemma class_eq {G H : Type*} [group G] [group H] : G ≃* H →
+  (quotient.mk' (Group.of G) : isomorphism_classes.obj (Cat.of Group)) = quotient.mk' (Group.of H) :=
+λ h, quotient.eq'.mpr ⟨h.to_Group_iso⟩

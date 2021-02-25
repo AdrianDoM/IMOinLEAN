@@ -5,6 +5,8 @@ namespace subgroup
 
 variables {G H K : Type*} [group G] [group H] [group K]
 
+@[simp] lemma coe_inj {H : subgroup G} (x y : H) : (x : G) = y ↔ x = y := sorry
+
 @[simp] lemma range_subtype (H : subgroup G) : H.subtype.range = H :=
 ext' $ H.subtype.coe_range.trans subtype.range_coe
 
@@ -36,4 +38,15 @@ iff.trans (injective_iff f)
 instance range_subsingleton (f : G →* H) [subsingleton G] : subsingleton f.range :=
 ⟨λ ⟨a, x, hx⟩ ⟨b, y, hy⟩, by simp only [←hx, ←hy, subsingleton.elim x y]⟩
 
+lemma range_subsingleton_eq_bot (f : G →* H) [subsingleton G] : f.range = ⊥ := sorry
+
 end monoid_hom
+
+namespace mul_equiv
+
+variables {G H : Type*} [group G] [group H]
+variables {f : G →* H}
+
+noncomputable def of_injective (h : function.injective f) : G ≃* f.range := sorry
+
+end mul_equiv

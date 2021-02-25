@@ -15,12 +15,14 @@ lemma subsingleton_of_subgroup_quotient_subsingleton {N : subgroup G} :
 lemma mk'_surjective {N : subgroup G} [N.normal] : function.surjective (mk' N) :=
 λ x, x.induction_on' $ by { intro a, use a, refl }
 
-noncomputable def quotient_bot : quotient (⊥ : subgroup G) ≃* G :=
-mul_equiv.symm $ mul_equiv.of_bijective (mk' ⊥)
-  ⟨by rw [injective_iff_ker_eq_bot, ker_mk], mk'_surjective⟩
+def quotient_bot : quotient (⊥ : subgroup G) ≃* G :=
+{ to_fun := lift ⊥ (id G) (λ x hx, (mem_bot.mp hx).symm ▸ rfl), inv_fun := mk' ⊥,
+  left_inv := λ x, x.induction_on' $ by { intro a, simp only [lift_mk', id_apply], refl },
+  right_inv := λ x, show (lift ⊥ (id G) _) (quotient_group.mk x) = x, by simp,
+  map_mul' := λ x y, map_mul _ x y }
 
 variables {N : subgroup G} [normal N]
 
-noncomputable def quotient_subsingleton (h : subsingleton (quotient N)) : N ≃* G := sorry
+noncomputable def equiv_of_subsingleton_quotient (h : subsingleton (quotient N)) : N ≃* G := sorry
 
 end quotient_group

@@ -1,9 +1,10 @@
 import group_theory.quotient_group
 import group_theory.order_of_element
+import .simple_group
 
-variables {G : Type*} [group G] [fintype G]
 
 namespace subgroup
+variables {G : Type*} [group G] [fintype G]
 
 lemma card_pos : fintype.card G > 0 :=
 fintype.card_pos_iff.mpr ⟨1⟩
@@ -41,6 +42,7 @@ end fintype
 
 namespace quotient_group
 
+variables {G : Type*} [group G] [fintype G]
 variables {N : subgroup G} [subgroup.normal N] [decidable_pred (λ a, a ∈ N)] [decidable_pred N.carrier]
 
 lemma eq_bot_of_card_quotient_eq : fintype.card (quotient N) = fintype.card G → N = ⊥ :=
@@ -59,3 +61,42 @@ begin
 end
 
 end quotient_group
+
+namespace fingroup
+
+open fintype
+
+#check nat.strong_rec_on
+
+def strong_rec_on_card (G : Type*) (hGg : group G) (hGf : fintype G) 
+  {p : Π (G : Type*), group G → fintype G → Sort _} :
+  (Π (G : Type*) (hGg : group G) (hGf : fintype G),
+    (Π (H : Type*) (hHg : group H) (hHf : fintype H), @card H hHf < @card G hGf → p H hHg hHf) →
+    p G hGg hGf) → p G hGg hGf := sorry
+  
+end fingroup
+
+#check @fingroup.strong_rec_on_card
+
+namespace subgroup
+
+variables {G : Type*} [group G]
+
+def maximal_normal_subgroup (N : subgroup G) : Prop :=
+  N.normal ∧ N ≠ ⊤ ∧ ∀ (K : subgroup G) [K.normal], N ≤ K → K = N ∨ K = ⊤
+
+lemma exists_maximal_normal_subgroup_aux
+  (G : Type*) (hGg : group G) (hGf : fintype G) (h : ¬ subsingleton G) :
+  ∃ (N : subgroup G), maximal_normal_subgroup N :=
+fingroup.strong_rec_on_card G hGg hGf sorry
+
+lemma exists_maximal_normal_subgroup [fintype G] (h : ¬ subsingleton G) :
+  ∃ (N : subgroup G), maximal_normal_subgroup N :=
+exists_maximal_normal_subgroup_aux G infer_instance infer_instance h
+
+lemma maximal_normal_subgroup_iff (N : subgroup G) [N.normal] :
+  maximal_normal_subgroup N ↔
+  is_simple (quotient_group.quotient N) ∧ ¬ subsingleton (quotient_group.quotient N) :=
+sorry
+
+end subgroup
