@@ -1,5 +1,4 @@
 import group_theory.subgroup
-import algebra.pointwise
 
 namespace subgroup
 
@@ -10,13 +9,21 @@ variables {G H K : Type*} [group G] [group H] [group K]
 @[simp] lemma range_subtype (H : subgroup G) : H.subtype.range = H :=
 ext' $ H.subtype.coe_range.trans subtype.range_coe
 
-lemma map_eq_comap_of_inverse {f : G →* H} {g : H →* G} (hl : function.left_inverse g f)
+variables {f : G →* H}
+
+lemma map_eq_comap_of_inverse {g : H →* G} (hl : function.left_inverse g f)
   (hr : function.right_inverse g f) (K : subgroup G) : map f K = comap g K :=
 ext' $ by rw [coe_map, coe_comap, set.image_eq_preimage_of_inverse hl hr]
 
-lemma map_comap_eq {f : G →* H} (hf : function.surjective f) (K : subgroup H) :
+lemma map_comap_eq (hf : function.surjective f) (K : subgroup H) :
   map f (comap f K) = K :=
 ext' $ by rw [coe_map, coe_comap, set.image_preimage_eq ↑K hf]
+
+lemma ker_le_comap {K : subgroup H} : f.ker ≤ comap f K :=
+(gc_map_comap f).monotone_u bot_le
+
+lemma le_ker_iff_map {K : subgroup G} : K ≤ f.ker ↔ map f K = ⊥ :=
+by rw [monoid_hom.ker, eq_bot_iff, gc_map_comap]
 
 end subgroup
 

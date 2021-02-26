@@ -1,6 +1,6 @@
 import group_theory.quotient_group
 import group_theory.order_of_element
-import .simple_group
+import .simple_group .quotient_group
 
 
 namespace subgroup
@@ -80,15 +80,37 @@ end fingroup
 
 namespace subgroup
 
+open quotient_group
+
 variables {G : Type*} [group G]
+
+local attribute [instance] classical.prop_decidable
 
 def maximal_normal_subgroup (N : subgroup G) : Prop :=
   N.normal ∧ N ≠ ⊤ ∧ ∀ (K : subgroup G) [K.normal], N ≤ K → K = N ∨ K = ⊤
 
 lemma exists_maximal_normal_subgroup_aux
-  (G : Type*) (hGg : group G) (hGf : fintype G) (h : ¬ subsingleton G) :
-  ∃ (N : subgroup G), maximal_normal_subgroup N :=
-fingroup.strong_rec_on_card G hGg hGf sorry
+  (G : Type*) (hGg : group G) (hGf : fintype G) :
+  ¬ subsingleton G → ∃ (N : subgroup G), maximal_normal_subgroup N :=
+fingroup.strong_rec_on_card G hGg hGf begin
+  intros G, introsI hGg hGf, intros ih hG, 
+  by_cases h : is_simple G,
+  { use [⊥, subgroup.bot_normal, λ h, hG (subsingleton_iff.mpr $ subsingleton_of_bot_eq_top h)],
+    intros N hN _, exact h N hN },
+  rcases not_is_simple.mp h with ⟨N, hN, hN'⟩, haveI := hN,
+  rcases ih (quotient N) infer_instance infer_instance _ 
+    (λ h, hN'.2 $ subsingleton_quotient_iff.mp h) with ⟨K, hK, hKtop, hKmax⟩,
+  swap, { apply card_quotient_lt hN'.1 },
+  use [comap (mk' N) K, normal.comap hK _], split,
+  { intro h, apply hKtop, rw ←comap_top (mk' N) at h, apply_fun map (mk' N) at h,
+    rw [map_comap_eq (mk'_surjective N), map_comap_eq (mk'_surjective N)] at h, exact h },
+  intro L, introI hL, intro hLK,
+  have hLK' := (gc_map_comap (mk' N)).monotone_l hLK, rw map_comap_eq (mk'_surjective N) at hLK',
+  have hNL : N ≤ L := le_trans le_comap_mk' hLK,
+  cases @hKmax (map (mk' N) L) (map_mk'_normal hNL) hLK',
+  { left, exact le_antisymm ((gc_map_comap (mk' N)).le_u $ le_of_eq h_1) hLK },
+  right, exact (map_mk'_eq_top hNL).mp h_1,
+end
 
 lemma exists_maximal_normal_subgroup [fintype G] (h : ¬ subsingleton G) :
   ∃ (N : subgroup G), maximal_normal_subgroup N :=
@@ -97,6 +119,21 @@ exists_maximal_normal_subgroup_aux G infer_instance infer_instance h
 lemma maximal_normal_subgroup_iff (N : subgroup G) [N.normal] :
   maximal_normal_subgroup N ↔
   is_simple (quotient_group.quotient N) ∧ ¬ subsingleton (quotient_group.quotient N) :=
-sorry
+⟨λ hN, ⟨begin
+  intro K, introI hK,
+  have : N ≤ comap (mk' N) K, { convert ker_le_comap, rw ker_mk },
+  cases hN.2.2 (comap (mk' N) K) this,
+  { left, rw [←map_comap_eq (mk'_surjective N) K, ←map_comap_eq (mk'_surjective N) ⊥, h],
+    change _ = map _ (mk' N).ker, rw ker_mk },
+  right, rw [←map_comap_eq (mk'_surjective N) K, ←map_comap_eq (mk'_surjective N) ⊤, h, comap_top],
+end,
+  λ h, hN.2.1 (subsingleton_quotient_iff.mp h)⟩,
+λ ⟨h1, h2⟩, ⟨infer_instance, λ h, h2 (subsingleton_quotient_iff.mpr h),
+  begin
+    intro K, introI hK, intro hNK,
+    cases h1 _ (map_mk'_normal hNK),
+    { left, apply le_antisymm _ hNK, rw ←ker_mk N, exact le_ker_iff_map.mpr h },
+    right, apply (map_mk'_eq_top hNK).mp h,
+  end⟩⟩
 
 end subgroup
