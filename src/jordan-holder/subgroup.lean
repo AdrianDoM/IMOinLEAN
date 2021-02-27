@@ -4,7 +4,7 @@ namespace subgroup
 
 variables {G H K : Type*} [group G] [group H] [group K]
 
-@[simp] lemma coe_inj {H : subgroup G} (x y : H) : (x : G) = y ↔ x = y := sorry
+@[simp] lemma coe_inj {H : subgroup G} (x y : H) : (x : G) = y ↔ x = y := set_coe.ext_iff
 
 @[simp] lemma range_subtype (H : subgroup G) : H.subtype.range = H :=
 ext' $ H.subtype.coe_range.trans subtype.range_coe
@@ -25,16 +25,22 @@ lemma ker_le_comap {K : subgroup H} : f.ker ≤ comap f K :=
 lemma le_ker_iff_map {K : subgroup G} : K ≤ f.ker ↔ map f K = ⊥ :=
 by rw [monoid_hom.ker, eq_bot_iff, gc_map_comap]
 
+lemma subsingleton_subgroup_iff {H : subgroup G} : subsingleton H ↔ H = ⊥ :=
+⟨λ h, le_antisymm (λ a ha, sorry) bot_le,
+λ h, subsingleton.intro $ λ ⟨a, ha⟩ ⟨b, hb⟩, by { rw h at *, congr, rw [mem_bot.mp ha, mem_bot.mp hb] }⟩
+
 end subgroup
 
 namespace monoid_hom
+
+open subgroup
 
 variables {G H : Type*} [group G] [group H]
 
 @[simp] lemma range_one : (1 : G →* H).range = ⊥ :=
 subgroup.ext $ λ x, ⟨
-  λ ⟨y, hy⟩, subgroup.mem_bot.mpr (hy ▸ one_apply _),
-  λ hx, ⟨1, (subgroup.mem_bot.mp hx).symm ▸ one_apply _⟩
+  λ ⟨y, hy⟩, mem_bot.mpr (hy ▸ one_apply _),
+  λ hx, ⟨1, (mem_bot.mp hx).symm ▸ one_apply _⟩
 ⟩
 
 lemma injective_iff_ker_eq_bot (f : G →* H) : function.injective f ↔ f.ker = ⊥ :=
@@ -42,10 +48,11 @@ iff.trans (injective_iff f)
   ⟨λ h, le_antisymm (λ x hx, subgroup.mem_bot.mpr $ h x $ (mem_ker f).mp hx) bot_le,
   λ h x hx, by { rwa [←mem_ker, h, subgroup.mem_bot] at hx }⟩
 
-instance range_subsingleton (f : G →* H) [subsingleton G] : subsingleton f.range :=
+instance range_subsingleton {f : G →* H} [subsingleton G] : subsingleton f.range :=
 ⟨λ ⟨a, x, hx⟩ ⟨b, y, hy⟩, by simp only [←hx, ←hy, subsingleton.elim x y]⟩
 
-lemma range_subsingleton_eq_bot (f : G →* H) [subsingleton G] : f.range = ⊥ := sorry
+lemma range_subsingleton_eq_bot (f : G →* H) [subsingleton G] : f.range = ⊥ :=
+by rw ←subsingleton_subgroup_iff.mp monoid_hom.range_subsingleton; apply_instance
 
 end monoid_hom
 

@@ -93,7 +93,7 @@ lemma exists_maximal_normal_subgroup_aux
   (G : Type*) (hGg : group G) (hGf : fintype G) :
   ¬ subsingleton G → ∃ (N : subgroup G), maximal_normal_subgroup N :=
 fingroup.strong_rec_on_card G hGg hGf begin
-  intros G, introsI hGg hGf, intros ih hG, 
+  intros G, introsI hGg hGf, intros ih hG,
   by_cases h : is_simple G,
   { use [⊥, subgroup.bot_normal, λ h, hG (subsingleton_iff.mpr $ subsingleton_of_bot_eq_top h)],
     intros N hN _, exact h N hN },

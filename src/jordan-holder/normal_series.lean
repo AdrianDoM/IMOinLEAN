@@ -54,7 +54,10 @@ def composition_series_of_simple_of_not_subsingleton (h1 : is_simple G) (h2 : ¬
   composition_series G :=
 ⟨cons (Group.of punit) G (from_subsingleton punit.subsingleton G) (trivial punit.subsingleton),
 λ H hH, begin
-  simp at hH, simp [hH], sorry
+  simp only [factors, multiset.mem_singleton] at hH,
+  have : quotient (from_subsingleton punit.subsingleton ↥G).φ.range ≃* G :=
+    mul_equiv.trans (equiv_quotient_of_eq from_subsingleton_range) quotient_bot,
+  rw class_eq this at hH, simp [hH], use [h1, h2],
 end⟩
 
 def join {N : subgroup G} [hN : N.normal] : composition_series (Group.of N) →

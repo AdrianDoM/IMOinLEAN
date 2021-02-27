@@ -11,7 +11,7 @@ def is_simple (G : Type*) [group G] : Prop :=
 variables {G H : Type*} [group G] [group H]
 
 @[simp]
-lemma is_simple_coe_Group : is_simple ↥(Group.of G) ↔ is_simple G := sorry
+lemma is_simple_coe_Group : is_simple ↥(Group.of G) ↔ is_simple G := by refl
 
 @[simp]
 lemma not_is_simple : ¬ is_simple G ↔ ∃ (N : subgroup G), N.normal ∧ N ≠ ⊥ ∧ N ≠ ⊤ :=
