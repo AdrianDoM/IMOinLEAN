@@ -80,6 +80,6 @@ noncomputable def of_injective (h : function.injective f) : G ≃* f.range :=
 of_left_inverse $ classical.some_spec h.has_left_inverse
 
 def of_subsingleton (h : subsingleton G) : G ≃* punit :=
-⟨λ _, (), λ _, 1, λ x, subsingleton.elim _ _, λ x, subsingleton.elim _ _, λ _ _, rfl⟩
+⟨λ _, punit.star, λ _, 1, λ x, subsingleton.elim _ _, λ x, subsingleton.elim _ _, λ _ _, rfl⟩
 
 end mul_equiv

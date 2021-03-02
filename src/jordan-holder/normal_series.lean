@@ -72,7 +72,7 @@ def factors_of_subsingleton (hG : subsingleton G) :
   exfalso, apply (h (quotient.mk' (1 : Group)) _).2 is_trivial_class_one,
   rw [factors_cons, mem_cons], left, apply class_eq,
   have : subsingleton (quotient f.φ.range) := @quotient.subsingleton _ hG _,
-  sorry -- exact (mul_equiv.of_subsingleton this).symm,
+  exact (mul_equiv.of_subsingleton this).symm,
 end
 
 /- The unique composition series for a simple group. -/
