@@ -39,25 +39,6 @@ lemma factors_cons {f : normal_embedding H G} {s : normal_series H} :
   (cons H G f s).factors = quotient.mk' (Group.of $ quotient f.φ.range) ::ₘ factors s :=
 rfl
 
-
--- def append : Π {G : Group.{u}} (f : normal_embedding N G),
---   normal_series N → normal_series (Group.of f.quotient) → normal_series G
--- | G f (trivial hH) (trivial hG) :=
---   trivial $ subsingleton_of_subgroup_quotient_subsingleton (by { haveI := hH, apply_instance }) hG
--- | G f σ (trivial hG) :=
---   of_mul_equiv ((mul_equiv.of_injective f.inj).trans (@equiv_of_subsingleton_quotient _ _ _ f.norm hG)) σ
--- | G f (trivial hH) (cons K L g s) :=
---   of_mul_equiv begin
---     haveI := f.norm, have : f.φ.range = ⊥ := range_subsingleton_eq_bot f,
---     exact (equiv_quotient_of_eq this).trans quotient_bot,
---   end (cons K L g s)
--- | G f σ (cons K _ g s) := cons
---   (Group.of $ @subgroup.comap G _ f.quotient _ (@quotient_group.mk' G _ f.φ.range f.norm) g.φ.range)
---   G { to_fun := λ (x : ↥(subgroup.comap _ _)), x, map_one' := rfl, map_mul' := λ x y, rfl,
---     inj := λ x y h, by simpa using h,
---     norm := by { simp, } }
---   sorry
-
 end normal_series
 
 /- A composition series is a normal series with simple and nontrivial factors. -/
@@ -117,44 +98,10 @@ lemma factors_of_simple (h1 : is_simple G) (h2 : ¬ subsingleton G) :
   exfalso, apply h'.2, simp [h1, subsingleton_quotient_iff],
 end
 
--- def join {N : subgroup G} [hN : N.normal] : composition_series (Group.of N) →
---   composition_series (Group.of $ quotient_group.quotient N) → composition_series G := sorry
--- -- λ σ τ, ⟨append σ.val τ.val, sorry⟩
-
--- lemma factors_join {N : subgroup G} [hN : N.normal] {σ : composition_series (Group.of N)}
---   {τ : composition_series (Group.of $ quotient_group.quotient N)} : 
---   (join σ τ).val.factors = sorry := sorry
-
 variables [hG : fintype G]
 include hG
 
 local attribute [instance] classical.prop_decidable
-
-/- Jordan-Hölder 1. Every finite group has a composition series. -/
--- noncomputable lemma exists_composition_series_of_finite :
---   composition_series G :=
--- suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G),
---   @fintype.card G hG = n → composition_series G,
---   from h (@fintype.card G hG) G hG rfl,
--- λ N, N.strong_rec_on $ begin
---   intros n ih H, introI hH, intro hn,
---   by_cases h1 : subsingleton H,
---   { existsi trivial h1, intro, simp },
---   by_cases h2 : is_simple H,
---   { exact composition_series_of_simple_of_not_subsingleton h2 h1 },
---   apply classical.subtype_of_exists,
---   rcases not_is_simple.mp h2 with ⟨N, hN, hNbot, hNtop⟩,
---   haveI := hN, -- Add N.normal to instance cache
---   suffices s : composition_series H, from ⟨s.val, s.property⟩,
---   apply @join _ N hN,
---   { apply ih (fintype.card N) (hn ▸ subgroup.card_lt hNtop),
---     { simp only [Group.coe_of, eq_self_iff_true] },
---     rw Group.coe_of, apply_instance },
---   apply ih (fintype.card $ quotient_group.quotient N),
---   { rw ←hn, apply quotient_group.card_quotient_lt hNbot },
---   { simp only [Group.coe_of, eq_self_iff_true] },
---   rw Group.coe_of, apply_instance,
--- end
 
 /- Jordan-Hölder 1. Every finite group has a composition series. -/
 noncomputable lemma exists_composition_series_of_finite :
