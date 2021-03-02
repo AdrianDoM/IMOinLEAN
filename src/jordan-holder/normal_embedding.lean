@@ -44,7 +44,9 @@ def comp_mul_equiv (f : normal_embedding G H) (h : H ≃* K) : normal_embedding 
     rw [← map_map, ← range_eq_map], refl
   end⟩
 
-instance group_quotient (f : normal_embedding G H) : group (quotient_group.quotient f.φ.range) :=
+open quotient_group
+
+instance group_quotient (f : normal_embedding G H) : group (quotient f.φ.range) :=
 by haveI := f.norm; apply_instance
 
 @[simp]
@@ -53,6 +55,19 @@ def of_normal_subgroup (N : subgroup G) [N.normal] : normal_embedding N G :=
 
 noncomputable def equiv_range (f : normal_embedding G H) : G ≃* f.φ.range :=
 mul_equiv.of_injective f.inj
+
+noncomputable def equiv_quotient_comp_mul_equiv (f : normal_embedding G H) (e : H ≃* K) :
+  quotient (comp_mul_equiv f e).φ.range ≃* quotient f.φ.range :=
+let ψ : K →* quotient f.φ.range := (mk' f.φ.range).comp e.symm.to_monoid_hom in
+have hψ : function.surjective ψ := function.surjective.comp (surjective_quot_mk _) e.symm.surjective,
+suffices h : ψ.ker = (comp_mul_equiv f e).φ.range,
+  from (equiv_quotient_of_eq h.symm).trans (quotient_ker_equiv_of_surjective ψ hψ),
+begin
+  simp [ψ, comp_mul_equiv, ←comap_ker],
+  have : comap e.symm.to_monoid_hom f.φ.range = map e.to_monoid_hom f.φ.range,
+  { symmetry, apply map_eq_comap_of_inverse, exact e.left_inv, exact e.right_inv },
+  rw this, simp [range_eq_map, ←map_map], refl,
+end
 
 lemma fintype (f : normal_embedding H G) : fintype G → fintype H := sorry
 

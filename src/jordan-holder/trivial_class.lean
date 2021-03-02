@@ -3,12 +3,15 @@ import category_theory.isomorphism_classes
 
 open category_theory
 
-@[simp]
 def is_trivial_class (C : isomorphism_classes.obj (Cat.of Group)) : Prop :=
 quotient.lift_on' C (λ (G : Group), subsingleton G)
   (λ G H ⟨h⟩, eq_iff_iff.mpr
     ⟨λ hG, @equiv.subsingleton.symm _ _ (iso.Group_iso_to_mul_equiv h).to_equiv hG,
     λ hH, @equiv.subsingleton _ _ (iso.Group_iso_to_mul_equiv h).to_equiv hH⟩)
+
+@[simp]
+lemma is_trivial_class_mk' {G : Group} : is_trivial_class (quotient.mk' G) = subsingleton G :=
+by simp only [quotient.lift_on'_mk', is_trivial_class]
 
 lemma is_trivial_class_one : is_trivial_class (quotient.mk' (1 : Group)) :=
 punit.subsingleton

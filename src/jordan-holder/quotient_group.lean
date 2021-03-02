@@ -17,7 +17,7 @@ lemma subsingleton_of_subgroup_quotient_subsingleton {N : subgroup G} :
   (@subsingleton.prod _ _ hqN hN)
 
 lemma mk'_surjective (N : subgroup G) [N.normal] : function.surjective (mk' N) :=
-λ x, x.induction_on' $ by { intro a, use a, refl }
+surjective_quot_mk _
 
 def quotient_bot : quotient (⊥ : subgroup G) ≃* G :=
 { to_fun := lift ⊥ (id G) (λ x hx, (mem_bot.mp hx).symm ▸ rfl), inv_fun := mk' ⊥,
@@ -42,7 +42,7 @@ lemma map_mk'_eq_top {K : subgroup G} (hNK : N ≤ K) : K.map (mk' N) = ⊤ ↔ 
     convert_to g' * (g'⁻¹ * g) ∈ K, { simp },
     exact mul_mem K hg' (hNK hg),
   end),
-λ h, ext' $ h.symm ▸ set.image_univ_of_surjective (mk'_surjective N)⟩
+λ h, ext' $ h.symm ▸ set.image_univ_of_surjective (surjective_quot_mk _)⟩
 
 lemma le_comap_mk' {K : subgroup (quotient N)} : N ≤ comap (mk' N) K :=
 by conv_lhs { rw ←ker_mk N }; exact ker_le_comap
