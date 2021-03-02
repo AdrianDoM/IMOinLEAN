@@ -15,12 +15,6 @@ variables {G H K N : Group.{u}}
 
 namespace normal_series
 
-/- Given a normal series for G and an isomorphism G ≃* H, we can produce a normal series for H
-by changing the last step from going into G to go into H. -/
-def of_mul_equiv (h : G ≃* H) : normal_series G → normal_series H
-| (trivial hG) := trivial $ @equiv.subsingleton.symm _ _ h.to_equiv hG
-| (cons K G f s) := cons K H (normal_embedding.comp_mul_equiv f h) s
-
 lemma exists_cons_of_not_subsingleton (h : ¬ subsingleton G) :
   Π (σ : normal_series G), ∃ H f s, σ = cons H G f s
 | (trivial hG) := absurd hG h
@@ -50,9 +44,32 @@ namespace compositon_series
 
 open normal_series multiset
 
+/- A trivial normal series is always a composition series. -/
+def of_subsingleton (h : subsingleton G) : composition_series G :=
+⟨trivial h, λ G' hG', absurd hG' $ multiset.not_mem_zero _⟩
+
+/- Given a composition series whose underlying normal series is constructed with `cons`, we can
+produce a composition series from the normal series used in `cons`. -/
 def of_cons {σ : composition_series G} {f : normal_embedding H G} {s : normal_series H} :
   σ.val = cons H G f s → composition_series H :=
 λ h, ⟨s, λ G' hG', σ.prop G' (show G' ∈ σ.val.factors, by { simp [h, hG'] })⟩
+
+@[simp]
+lemma factors_of_cons {σ : composition_series G} {f : normal_embedding H G} {s : normal_series H}
+  (h : σ.val = cons H G f s) : (of_cons h).val.factors = s.factors := rfl
+
+def of_mul_equiv (e : G ≃* H) : composition_series G → composition_series H
+| ⟨trivial hG, h⟩ := of_subsingleton $ @equiv.subsingleton.symm _ _ e.to_equiv hG
+| ⟨cons K G f s, h⟩ := ⟨cons K H (normal_embedding.comp_mul_equiv f e) s, λ G' hG', h G' begin
+  simp only [mem_cons, factors_cons] at hG',
+  rcases hG' with rfl | hG', swap,
+  { simp [mem_cons, factors_cons, hG'] },
+  sorry,
+end⟩
+
+@[simp]
+lemma factors_of_mul_equiv (e : G ≃* H) (σ : composition_series G) :
+  (of_mul_equiv e σ).val.factors = σ.val.factors := sorry
 
 /- Any composition series for the trivial group has no factors, i.e., it is a trivial series. -/
 lemma factors_of_subsingleton (hG : subsingleton G) :
@@ -76,7 +93,7 @@ def of_simple (h1 : is_simple G) (h2 : ¬ subsingleton G) :
   rw class_eq this at hH, simp [hH], use [h1, h2],
 end⟩
 
-/- Any composition series of a simple group G has ⟦G⟧ as its only composition factor. -/
+/- Any composition series of a simple group `G` has `⟦G⟧` as its only composition factor. -/
 lemma factors_of_simple (h1 : is_simple G) (h2 : ¬ subsingleton G) :
   Π (s : composition_series G), s.val.factors = quotient.mk' G ::ₘ 0
 | ⟨trivial hG, h⟩ := absurd hG h2
@@ -98,10 +115,12 @@ lemma factors_of_simple (h1 : is_simple G) (h2 : ¬ subsingleton G) :
   exfalso, apply h'.2, simp [h1, subsingleton_quotient_iff],
 end
 
+local attribute [instance] classical.prop_decidable
 variables [hG : fintype G]
 include hG
 
-local attribute [instance] classical.prop_decidable
+lemma card_lt_of_cons {σ : composition_series G} {f : normal_embedding H G} {s : normal_series H} :
+  σ.val = cons H G f s → @fintype.card H (f.fintype hG) < fintype.card G := sorry
 
 /- Jordan-Hölder 1. Every finite group has a composition series. -/
 noncomputable lemma exists_composition_series_of_finite :
@@ -142,8 +161,10 @@ suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G) (σ τ : composition_ser
   rcases exists_cons_of_not_subsingleton hG' σ.val with ⟨H, f, s, hs⟩,
   rcases exists_cons_of_not_subsingleton hG' τ.val with ⟨K, g, t, ht⟩,
   simp [hs, ht],
-  by_cases nonempty (H ≃* K),
-  { apply h.elim, intro h,
-    have s1 := of_cons hs,
-    sorry }, sorry,
+  by_cases f.φ.range = g.φ.range,
+  { congr' 1, { exact class_eq (equiv_quotient_of_eq h) },
+    have : H ≃* K := f.equiv_range.trans ((mul_equiv.subgroup_congr h).trans g.equiv_range.symm),
+    rw [←factors_of_cons hs, ←factors_of_cons ht, ←factors_of_mul_equiv this.symm],
+    apply ih (@fintype.card H $ f.fintype hG) _ H (f.fintype hG) _ _ rfl,
+    rw ←hn, exact card_lt_of_cons hs }, sorry,
 end

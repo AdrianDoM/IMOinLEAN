@@ -54,4 +54,6 @@ def of_normal_subgroup (N : subgroup G) [N.normal] : normal_embedding N G :=
 noncomputable def equiv_range (f : normal_embedding G H) : G ≃* f.φ.range :=
 mul_equiv.of_injective f.inj
 
+lemma fintype (f : normal_embedding H G) : fintype G → fintype H := sorry
+
 end normal_embedding
