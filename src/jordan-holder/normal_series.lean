@@ -21,6 +21,10 @@ def of_mul_equiv (h : G ≃* H) : normal_series G → normal_series H
 | (trivial hG) := trivial $ @equiv.subsingleton.symm _ _ h.to_equiv hG
 | (cons K G f s) := cons K H (normal_embedding.comp_mul_equiv f h) s
 
+lemma exists_cons_of_not_subsingleton (h : ¬ subsingleton G) :
+  Π (σ : normal_series G), ∃ H f s, σ = cons H G f s
+| (trivial hG) := absurd hG h
+| (cons H G f s) := ⟨H, f, s, rfl⟩
 
 /- The factors of a normal series are the quotient groups of consecutive elements in the series. -/
 def factors : Π {G : Group.{u}}, normal_series G → multiset (isomorphism_classes.obj $ Cat.of Group)
@@ -65,7 +69,12 @@ namespace compositon_series
 
 open normal_series multiset
 
-def factors_of_subsingleton (hG : subsingleton G) :
+def of_cons {σ : composition_series G} {f : normal_embedding H G} {s : normal_series H} :
+  σ.val = cons H G f s → composition_series H :=
+λ h, ⟨s, λ G' hG', σ.prop G' (show G' ∈ σ.val.factors, by { simp [h, hG'] })⟩
+
+/- Any composition series for the trivial group has no factors, i.e., it is a trivial series. -/
+lemma factors_of_subsingleton (hG : subsingleton G) :
   Π (s : composition_series G), s.val.factors = 0
 | ⟨trivial _, _⟩ := rfl
 | ⟨cons H G f s, h⟩ := begin
@@ -86,7 +95,7 @@ def of_simple (h1 : is_simple G) (h2 : ¬ subsingleton G) :
   rw class_eq this at hH, simp [hH], use [h1, h2],
 end⟩
 
-/- A composition series of a simple group G has only G its composition factor. -/
+/- Any composition series of a simple group G has ⟦G⟧ as its only composition factor. -/
 lemma factors_of_simple (h1 : is_simple G) (h2 : ¬ subsingleton G) :
   Π (s : composition_series G), s.val.factors = quotient.mk' G ::ₘ 0
 | ⟨trivial hG, h⟩ := absurd hG h2
@@ -117,6 +126,7 @@ end
 --   (join σ τ).val.factors = sorry := sorry
 
 variables [hG : fintype G]
+include hG
 
 local attribute [instance] classical.prop_decidable
 
@@ -151,7 +161,7 @@ noncomputable lemma exists_composition_series_of_finite :
   composition_series G :=
 suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G),
   @fintype.card G hG = n → composition_series G,
-  from h (@fintype.card G hG) G hG rfl,
+  from h (fintype.card G) G hG rfl,
 λ N, N.strong_rec_on $ begin
   intros n ih H, introI hH, intro hn,
   by_cases h1 : subsingleton H,
@@ -173,5 +183,20 @@ suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G),
 end
 
 /- Jordan-Hölder 2. Any two composition series for `G` have the same factors. -/
-theorem eq_factors_of_composition_series (G : Group) [hG : fintype G] (σ τ : composition_series G) :
-  σ.val.factors = τ.val.factors := sorry
+theorem eq_factors_of_composition_series (σ τ : composition_series G) :
+  σ.val.factors = τ.val.factors :=
+suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G) (σ τ : composition_series G),
+  @fintype.card G hG = n → σ.val.factors = τ.val.factors,
+  from h (fintype.card G) G hG σ τ rfl,
+λ n, n.strong_induction_on $ begin
+  clear σ τ hG G n,
+  intros n ih G, introI hG, intros σ τ hn,
+  by_cases hG' : subsingleton G, { simp only [factors_of_subsingleton hG'] },
+  rcases exists_cons_of_not_subsingleton hG' σ.val with ⟨H, f, s, hs⟩,
+  rcases exists_cons_of_not_subsingleton hG' τ.val with ⟨K, g, t, ht⟩,
+  simp [hs, ht],
+  by_cases nonempty (H ≃* K),
+  { apply h.elim, intro h,
+    have s1 := of_cons hs,
+    sorry }, sorry,
+end
