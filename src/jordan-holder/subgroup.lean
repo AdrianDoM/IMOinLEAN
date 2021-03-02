@@ -1,4 +1,5 @@
 import group_theory.subgroup
+import algebra.punit_instances
 
 namespace subgroup
 
@@ -54,6 +55,11 @@ instance range_subsingleton {f : G →* H} [subsingleton G] : subsingleton f.ran
 lemma range_subsingleton_eq_bot (f : G →* H) [subsingleton G] : f.range = ⊥ :=
 by rw ←subsingleton_subgroup_iff.mp monoid_hom.range_subsingleton; apply_instance
 
+lemma mem_range_self (f : G →* H) (x : G) : f x ∈ f.range := mem_range.mpr ⟨x, rfl⟩
+
+def range_restrict (f : G →* H) : G →* f.range :=
+f.cod_restrict f.range f.mem_range_self
+
 end monoid_hom
 
 namespace mul_equiv
@@ -61,6 +67,19 @@ namespace mul_equiv
 variables {G H : Type*} [group G] [group H]
 variables {f : G →* H}
 
-noncomputable def of_injective (h : function.injective f) : G ≃* f.range := sorry
+def of_left_inverse {g : H → G} (h : function.left_inverse g f) : G ≃* f.range :=
+{ to_fun := f.range_restrict,
+  inv_fun := g ∘ f.range.subtype,
+  left_inv := h,
+  right_inv := λ x, subtype.ext $
+    let ⟨x', hx'⟩ := monoid_hom.mem_range.mp x.prop in
+    show f (g x) = x, by rw [←hx', h x'],
+  .. f.range_restrict }
+
+noncomputable def of_injective (h : function.injective f) : G ≃* f.range :=
+of_left_inverse $ classical.some_spec h.has_left_inverse
+
+def of_subsingleton (h : subsingleton G) : G ≃* punit :=
+⟨λ _, (), λ _, 1, λ x, subsingleton.elim _ _, λ x, subsingleton.elim _ _, λ _ _, rfl⟩
 
 end mul_equiv

@@ -51,4 +51,7 @@ by haveI := f.norm; apply_instance
 def of_normal_subgroup (N : subgroup G) [N.normal] : normal_embedding N G :=
 ⟨N.subtype, λ x y hx, by simpa using hx, (range_subtype N).symm ▸ infer_instance⟩
 
+noncomputable def equiv_range (f : normal_embedding G H) : G ≃* f.φ.range :=
+mul_equiv.of_injective f.inj
+
 end normal_embedding

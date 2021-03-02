@@ -1,6 +1,10 @@
 import group_theory.quotient_group
 import .subgroup
 
+instance quotient.subsingleton {α : Type*} [subsingleton α] (s : setoid α) :
+  subsingleton (quotient s) :=
+⟨λ a b, quotient.induction_on₂ a b $ λ x y, by rw subsingleton.elim x y⟩
+
 open subgroup monoid_hom
 
 namespace quotient_group
@@ -42,7 +46,6 @@ lemma map_mk'_eq_top {K : subgroup G} (hNK : N ≤ K) : K.map (mk' N) = ⊤ ↔ 
 
 lemma le_comap_mk' {K : subgroup (quotient N)} : N ≤ comap (mk' N) K :=
 by conv_lhs { rw ←ker_mk N }; exact ker_le_comap
-
 
 lemma subsingleton_quotient_iff : subsingleton (quotient N) ↔ N = ⊤ :=
 ⟨λ h, le_antisymm le_top (λ x _, ker_mk N ▸
