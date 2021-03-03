@@ -10,6 +10,19 @@ variables {G H K : Type*} [group G] [group H] [group K]
 @[simp] lemma range_subtype (H : subgroup G) : H.subtype.range = H :=
 ext' $ H.subtype.coe_range.trans subtype.range_coe
 
+variable (G)
+def equiv_top : G ≃* (⊤ : subgroup G):=
+{ to_fun := λ x, ⟨x, mem_top x⟩,
+  inv_fun := λ x, x.val,
+  left_inv := λ x, rfl,
+  right_inv := λ x, subtype.ext_iff_val.mpr rfl,
+  map_mul' := λ x y, rfl }
+
+variable {G}
+@[simp]
+lemma equiv_top_symm_apply : (equiv_top G).symm.to_monoid_hom = subgroup.subtype ⊤ :=
+monoid_hom.ext $ λ x, rfl
+
 instance (N K : subgroup G) [hN : N.normal] [hK : K.normal] : normal (N ⊔ K) :=
 ⟨λ h (hh : h ∈ ↑(N ⊔ K)) g, show g * h * g⁻¹ ∈ ↑(N ⊔ K), begin
   rw mul_normal at *, rcases hh with ⟨n, k, hn, hk, rfl⟩,
@@ -20,7 +33,14 @@ end⟩
 instance (N K : subgroup G) [hN : N.normal] [hK : K.normal] : normal (N ⊓ K) :=
 ⟨λ h hh g, mem_inf.mpr ⟨hN.conj_mem _ (mem_inf.mp hh).1 _, hK.conj_mem _ (mem_inf.mp hh).2 _⟩⟩
 
-variables {f : G →* H}
+instance (N : subgroup G) [N.normal] (e : G ≃* H) : normal (map e.to_monoid_hom N) := sorry
+
+variables {f : G →* H} {g : H →* K}
+
+open monoid_hom
+
+lemma range_comp : (g.comp f).range = map g f.range :=
+by rw [range_eq_map, ←map_map, range_eq_map]
 
 lemma map_eq_comap_of_inverse {g : H →* G} (hl : function.left_inverse g f)
   (hr : function.right_inverse g f) (K : subgroup G) : map f K = comap g K :=
@@ -34,7 +54,12 @@ lemma ker_le_comap {K : subgroup H} : f.ker ≤ comap f K :=
 (gc_map_comap f).monotone_u bot_le
 
 lemma le_ker_iff_map {K : subgroup G} : K ≤ f.ker ↔ map f K = ⊥ :=
-by rw [monoid_hom.ker, eq_bot_iff, gc_map_comap]
+by rw [ker, eq_bot_iff, gc_map_comap]
+
+lemma range_inclusion {H K : subgroup G} (h : H ≤ K) :
+  (inclusion h).range = comap K.subtype H := sorry
+
+lemma comap_subtype (H K : subgroup G) : comap K.subtype H = comap K.subtype (K ⊓ H) := sorry
 
 lemma inclusion_injective {H K : subgroup G} {h : H ≤ K} : function.injective (inclusion h)
 | ⟨_, _⟩ ⟨_, _⟩ := subtype.ext_iff_val.2 ∘ subtype.ext_iff_val.1
@@ -42,6 +67,11 @@ lemma inclusion_injective {H K : subgroup G} {h : H ≤ K} : function.injective 
 lemma subsingleton_subgroup_iff {H : subgroup G} : subsingleton H ↔ H = ⊥ :=
 ⟨λ h, le_antisymm (λ a ha, sorry) bot_le,
 λ h, subsingleton.intro $ λ ⟨a, ha⟩ ⟨b, hb⟩, by { rw h at *, congr, rw [mem_bot.mp ha, mem_bot.mp hb] }⟩
+
+lemma comap_subtype_top : comap (subgroup.subtype ⊤) = map (equiv_top G).to_monoid_hom :=
+funext $ λ H, by rw [@map_eq_comap_of_inverse _ _ _ _ (equiv_top G).to_monoid_hom
+  (equiv_top G).symm.to_monoid_hom (equiv_top G).left_inv (equiv_top G).right_inv,
+  equiv_top_symm_apply]
 
 end subgroup
 

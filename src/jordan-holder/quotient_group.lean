@@ -55,5 +55,7 @@ lemma subsingleton_quotient_iff : subsingleton (quotient N) ↔ N = ⊤ :=
 
 noncomputable def equiv_of_subsingleton_quotient (h : subsingleton (quotient N)) : N ≃* G := sorry
 
+variables {H : Type*} [group H]
+def equiv_quotient_of_equiv (e : G ≃* H) : quotient N ≃* quotient (N.map e.to_monoid_hom) := sorry
 
 end quotient_group
