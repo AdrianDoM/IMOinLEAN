@@ -83,3 +83,37 @@ def of_subsingleton (h : subsingleton G) : G ≃* punit :=
 ⟨λ _, punit.star, λ _, 1, λ x, subsingleton.elim _ _, λ x, subsingleton.elim _ _, λ _ _, rfl⟩
 
 end mul_equiv
+
+namespace subgroup
+
+section maximal_normal_subgroup
+
+variables {G : Type*} [group G]
+
+/-- A maximal normal subgroup `N` of `G` is a normal proper subgroup that is not properly
+contained in any other normal subgroups, except for `G` itself. -/
+def maximal_normal_subgroup (N : subgroup G) : Prop :=
+  N.normal ∧ N ≠ ⊤ ∧ ∀ (K : subgroup G) [K.normal], N ≤ K → K = N ∨ K = ⊤
+
+instance (N K : subgroup G) [hN : N.normal] [hK : K.normal] : normal (N ⊔ K) :=
+⟨λ h (hh : h ∈ ↑(N ⊔ K)) g, show g * h * g⁻¹ ∈ ↑(N ⊔ K), begin
+  rw mul_normal at *, rcases hh with ⟨n, k, hn, hk, rfl⟩,
+  use [g * n * g⁻¹, g * k * g⁻¹, hN.conj_mem n hn g, hK.conj_mem k hk g],
+  simp,
+end⟩
+
+lemma sup_maximal_normal_subgroup {N K : subgroup G} (hN : maximal_normal_subgroup N)
+  (hK : maximal_normal_subgroup K) (h : N ≠ K) : N ⊔ K = ⊤ :=
+begin
+  haveI := hN.1, haveI := hK.1,
+  have h1 := hN.2.2 (N ⊔ K) le_sup_left,
+  have h2 := hK.2.2 (N ⊔ K) le_sup_right,
+  cases h1, swap, { exact h1 },
+  exfalso, apply h (le_antisymm _ (h1 ▸ le_sup_right)),
+  cases h2, swap, { apply absurd _ hN.2.1, rw [←h1, h2] },
+  exact h2 ▸ le_sup_left,
+end
+
+end maximal_normal_subgroup
+
+end subgroup

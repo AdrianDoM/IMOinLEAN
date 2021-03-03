@@ -69,6 +69,8 @@ begin
   rw this, simp [range_eq_map, ←map_map], refl,
 end
 
-lemma fintype (f : normal_embedding H G) : fintype G → fintype H := sorry
+noncomputable lemma fintype [fintype G] (f : normal_embedding H G)
+  [decidable_pred f.φ.range.carrier] : fintype H :=
+fintype.of_equiv f.φ.range f.equiv_range.to_equiv.symm
 
 end normal_embedding

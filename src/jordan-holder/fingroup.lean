@@ -6,8 +6,7 @@ import .simple_group .quotient_group
 namespace subgroup
 variables {G : Type*} [group G] [fintype G]
 
-lemma card_pos : fintype.card G > 0 :=
-fintype.card_pos_iff.mpr ⟨1⟩
+lemma card_pos : fintype.card G > 0 := fintype.card_pos_iff.mpr ⟨1⟩
 
 variables {H : subgroup G} [decidable_pred H.carrier]
 
@@ -86,9 +85,6 @@ variables {G : Type*} [group G]
 
 local attribute [instance] classical.prop_decidable
 
-def maximal_normal_subgroup (N : subgroup G) : Prop :=
-  N.normal ∧ N ≠ ⊤ ∧ ∀ (K : subgroup G) [K.normal], N ≤ K → K = N ∨ K = ⊤
-
 lemma exists_maximal_normal_subgroup_aux
   (G : Type*) (hGg : group G) (hGf : fintype G) :
   ¬ subsingleton G → ∃ (N : subgroup G), maximal_normal_subgroup N :=
@@ -115,25 +111,5 @@ end
 lemma exists_maximal_normal_subgroup [fintype G] (h : ¬ subsingleton G) :
   ∃ (N : subgroup G), maximal_normal_subgroup N :=
 exists_maximal_normal_subgroup_aux G infer_instance infer_instance h
-
-lemma maximal_normal_subgroup_iff (N : subgroup G) [N.normal] :
-  maximal_normal_subgroup N ↔
-  is_simple (quotient_group.quotient N) ∧ ¬ subsingleton (quotient_group.quotient N) :=
-⟨λ hN, ⟨begin
-  intro K, introI hK,
-  have : N ≤ comap (mk' N) K, { convert ker_le_comap, rw ker_mk },
-  cases hN.2.2 (comap (mk' N) K) this,
-  { left, rw [←map_comap_eq (mk'_surjective N) K, ←map_comap_eq (mk'_surjective N) ⊥, h],
-    change _ = map _ (mk' N).ker, rw ker_mk },
-  right, rw [←map_comap_eq (mk'_surjective N) K, ←map_comap_eq (mk'_surjective N) ⊤, h, comap_top],
-end,
-  λ h, hN.2.1 (subsingleton_quotient_iff.mp h)⟩,
-λ ⟨h1, h2⟩, ⟨infer_instance, λ h, h2 (subsingleton_quotient_iff.mpr h),
-  begin
-    intro K, introI hK, intro hNK,
-    cases h1 _ (map_mk'_normal hNK),
-    { left, apply le_antisymm _ hNK, rw ←ker_mk N, exact le_ker_iff_map.mpr h },
-    right, apply (map_mk'_eq_top hNK).mp h,
-  end⟩⟩
 
 end subgroup

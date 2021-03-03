@@ -126,15 +126,13 @@ lemma factors_of_simple (h1 : is_simple G) (h2 : ¬ subsingleton G) :
   exfalso, apply h'.2, simp [h1, subsingleton_quotient_iff],
 end
 
-/-- A normal embedding used in a composition series cannot be surjective. -/
-lemma not_surjective_embedding {σ : composition_series G}
+/-- The range of a normal embedding used in a composition series is a maximal normal subgroup. -/
+lemma maximal_normal_subgroup_of_cons {σ : composition_series G}
   {f : normal_embedding H G} {s : normal_series H} :
-  σ.val = cons H G f s → ¬ function.surjective f :=
-λ h fsur, begin
-  apply (σ.prop (quotient.mk' $ Group.of (quotient f.φ.range))
-    (by simp [←subtype.val_eq_coe, h])).2,
-  simp [subsingleton_quotient_iff], exact subgroup.ext' fsur.range_eq,
-end
+  σ.val = cons H G f s → maximal_normal_subgroup f.φ.range :=
+λ h, (maximal_normal_subgroup_iff _).mpr 
+  (by simpa using
+    σ.prop (quotient.mk' $ Group.of (quotient f.φ.range)) (by simp [←subtype.val_eq_coe, h]))
 
 local attribute [instance] classical.prop_decidable
 variables [hG : fintype G]
@@ -142,9 +140,9 @@ include hG
 
 /-- The cardinality of succesive terms in the composition series is strictly descreasing. -/
 lemma card_lt_of_cons {σ : composition_series G} {f : normal_embedding H G} {s : normal_series H} :
-  σ.val = cons H G f s → @fintype.card H (f.fintype hG) < fintype.card G :=
-λ h, @fintype.card_lt_of_injective_not_surjective _ _ (f.fintype hG) _ f f.inj $
-  not_surjective_embedding h
+  σ.val = cons H G f s → @fintype.card H f.fintype < fintype.card G :=
+λ h, @fintype.of_equiv_card _ _ f.fintype f.equiv_range.to_equiv ▸
+  by convert card_lt (maximal_normal_subgroup_of_cons h).2.1
 
 /-- Jordan-Hölder 1. Every finite group has a composition series. -/
 noncomputable lemma exists_composition_series_of_finite :
@@ -189,7 +187,9 @@ suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G) (σ τ : composition_ser
   { congr' 1, { exact class_eq (equiv_quotient_of_eq h) },
     have : H ≃* K := f.equiv_range.trans ((mul_equiv.subgroup_congr h).trans g.equiv_range.symm),
     rw [←factors_of_cons hs, ←factors_of_cons ht, ←factors_of_mul_equiv this.symm],
-    apply ih (@fintype.card H $ f.fintype hG) _ H (f.fintype hG) _ _ rfl,
-    rw ←hn, exact card_lt_of_cons hs }, 
+    apply ih (@fintype.card H f.fintype) _ H f.fintype _ _ rfl,
+    rw ←hn, exact card_lt_of_cons hs },
+  have htop := sup_maximal_normal_subgroup (maximal_normal_subgroup_of_cons hs)
+    (maximal_normal_subgroup_of_cons ht) h,
   sorry,
 end
