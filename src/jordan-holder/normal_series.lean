@@ -58,7 +58,21 @@ def composition_series (G : Group.{u}) : Type (u+1) :=
 
 namespace compositon_series
 
-open normal_series multiset
+open normal_series multiset fingroup
+
+/-- Construct a composition series for `G` from a composition series for `H`, a normal embedding
+of `H` into `G` and a proof that the new factor introduced is simple and nontrivial. -/
+def cons' (f : normal_embedding H G) (σ : composition_series H)
+  (h : is_simple (quotient f.φ.range) ∧ ¬ subsingleton (quotient f.φ.range)) :
+  composition_series G :=
+⟨cons _ _ f σ.val, λ G' hG',
+  by { simp at hG', cases hG', { simpa [hG'] }, exact σ.prop _ hG' }⟩
+
+@[simp]
+def factors_of_cons' {f : normal_embedding H G} {σ : composition_series H}
+  {h : is_simple (quotient f.φ.range) ∧ ¬ subsingleton (quotient f.φ.range)} :
+  (cons' f σ h).val.factors = quotient.mk' (Group.of $ quotient f.φ.range) ::ₘ σ.val.factors :=
+sorry
 
 /-- A trivial normal series is always a composition series. -/
 def of_subsingleton (h : subsingleton G) : composition_series G :=
@@ -71,7 +85,7 @@ def of_cons {σ : composition_series G} {f : normal_embedding H G} {s : normal_s
 λ h, ⟨s, λ G' hG', σ.prop G' (show G' ∈ σ.val.factors, by { simp [h, hG'] })⟩
 
 @[simp]
-lemma factors_of_cons {σ : composition_series G} {f : normal_embedding H G} {s : normal_series H}
+lemma factors_of_of_cons {σ : composition_series G} {f : normal_embedding H G} {s : normal_series H}
   (h : σ.val = cons H G f s) : (of_cons h).val.factors = s.factors := rfl
 
 def of_mul_equiv (e : G ≃* H) : composition_series G → composition_series H :=
@@ -144,6 +158,7 @@ lemma card_lt_of_cons {σ : composition_series G} {f : normal_embedding H G} {s 
 λ h, @fintype.of_equiv_card _ _ f.fintype f.equiv_range.to_equiv ▸
   by convert card_lt (maximal_normal_subgroup_of_cons h).2.1
 
+variable (G)
 /-- Jordan-Hölder 1. Every finite group has a composition series. -/
 noncomputable lemma exists_composition_series_of_finite :
   composition_series G :=
@@ -170,15 +185,15 @@ suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G),
   simp [hG'], exact hN,
 end
 
+variable {G}
 /-- Jordan-Hölder 2. Any two composition series for `G` have the same factors. -/
-theorem eq_factors_of_composition_series (σ τ : composition_series G) :
+theorem eq_factors (σ τ : composition_series G) :
   σ.val.factors = τ.val.factors :=
 suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G) (σ τ : composition_series G),
   @fintype.card G hG = n → σ.val.factors = τ.val.factors,
   from h (fintype.card G) G hG σ τ rfl,
 λ n, n.strong_induction_on $ begin
-  clear σ τ hG G n,
-  intros n ih G, introI hG, intros σ τ hn,
+  clear σ τ hG G n, intros n ih G, introI hG, intros σ τ hn,
   by_cases hG' : subsingleton G, { simp only [factors_of_subsingleton hG'] },
   rcases exists_cons_of_not_subsingleton hG' σ.val with ⟨H, f, s, hs⟩,
   rcases exists_cons_of_not_subsingleton hG' τ.val with ⟨K, g, t, ht⟩,
@@ -186,10 +201,25 @@ suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G) (σ τ : composition_ser
   by_cases f.φ.range = g.φ.range,
   { congr' 1, { exact class_eq (equiv_quotient_of_eq h) },
     have : H ≃* K := f.equiv_range.trans ((mul_equiv.subgroup_congr h).trans g.equiv_range.symm),
-    rw [←factors_of_cons hs, ←factors_of_cons ht, ←factors_of_mul_equiv this.symm],
+    rw [←factors_of_of_cons hs, ←factors_of_of_cons ht, ←factors_of_mul_equiv this.symm],
     apply ih (@fintype.card H f.fintype) _ H f.fintype _ _ rfl,
     rw ←hn, exact card_lt_of_cons hs },
   have htop := sup_maximal_normal_subgroup (maximal_normal_subgroup_of_cons hs)
     (maximal_normal_subgroup_of_cons ht) h,
-  sorry,
+  have ρ := exists_composition_series_of_finite (Group.of ↥(f.φ.range ⊓ g.φ.range)),
+  let f' : normal_embedding (Group.of ↥(f.φ.range ⊓ g.φ.range)) H :=
+    comp_mul_equiv (of_normal_subgroup_to_subgroup inf_le_left) (equiv_range f).symm,
+  let g' : normal_embedding (Group.of ↥(f.φ.range ⊓ g.φ.range)) K :=
+    comp_mul_equiv (of_normal_subgroup_to_subgroup inf_le_right) (equiv_range g).symm,
+  let s' : composition_series H := cons' f' ρ sorry,
+  let t' : composition_series K := cons' g' ρ sorry,
+  have hs' := ih (@fintype.card H f.fintype) (hn ▸ card_lt_of_cons hs) H f.fintype s' (of_cons hs) rfl,
+  have ht' := ih (@fintype.card K g.fintype) (hn ▸ card_lt_of_cons ht) K g.fintype t' (of_cons ht) rfl,
+  rw [factors_of_of_cons hs, factors_of_cons'] at hs', rw ←hs',
+  rw [factors_of_of_cons ht, factors_of_cons'] at ht', rw ←ht',
+  conv_rhs { rw multiset.cons_swap }, congr' 1,
+  { apply class_eq, sorry },
+  congr' 1, apply class_eq, sorry,
 end
+
+end compositon_series

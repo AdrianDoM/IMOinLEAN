@@ -10,6 +10,16 @@ variables {G H K : Type*} [group G] [group H] [group K]
 @[simp] lemma range_subtype (H : subgroup G) : H.subtype.range = H :=
 ext' $ H.subtype.coe_range.trans subtype.range_coe
 
+instance (N K : subgroup G) [hN : N.normal] [hK : K.normal] : normal (N ⊔ K) :=
+⟨λ h (hh : h ∈ ↑(N ⊔ K)) g, show g * h * g⁻¹ ∈ ↑(N ⊔ K), begin
+  rw mul_normal at *, rcases hh with ⟨n, k, hn, hk, rfl⟩,
+  use [g * n * g⁻¹, g * k * g⁻¹, hN.conj_mem n hn g, hK.conj_mem k hk g],
+  simp,
+end⟩
+
+instance (N K : subgroup G) [hN : N.normal] [hK : K.normal] : normal (N ⊓ K) :=
+⟨λ h hh g, mem_inf.mpr ⟨hN.conj_mem _ (mem_inf.mp hh).1 _, hK.conj_mem _ (mem_inf.mp hh).2 _⟩⟩
+
 variables {f : G →* H}
 
 lemma map_eq_comap_of_inverse {g : H →* G} (hl : function.left_inverse g f)
@@ -25,6 +35,9 @@ lemma ker_le_comap {K : subgroup H} : f.ker ≤ comap f K :=
 
 lemma le_ker_iff_map {K : subgroup G} : K ≤ f.ker ↔ map f K = ⊥ :=
 by rw [monoid_hom.ker, eq_bot_iff, gc_map_comap]
+
+lemma inclusion_injective {H K : subgroup G} {h : H ≤ K} : function.injective (inclusion h)
+| ⟨_, _⟩ ⟨_, _⟩ := subtype.ext_iff_val.2 ∘ subtype.ext_iff_val.1
 
 lemma subsingleton_subgroup_iff {H : subgroup G} : subsingleton H ↔ H = ⊥ :=
 ⟨λ h, le_antisymm (λ a ha, sorry) bot_le,
@@ -94,13 +107,6 @@ variables {G : Type*} [group G]
 contained in any other normal subgroups, except for `G` itself. -/
 def maximal_normal_subgroup (N : subgroup G) : Prop :=
   N.normal ∧ N ≠ ⊤ ∧ ∀ (K : subgroup G) [K.normal], N ≤ K → K = N ∨ K = ⊤
-
-instance (N K : subgroup G) [hN : N.normal] [hK : K.normal] : normal (N ⊔ K) :=
-⟨λ h (hh : h ∈ ↑(N ⊔ K)) g, show g * h * g⁻¹ ∈ ↑(N ⊔ K), begin
-  rw mul_normal at *, rcases hh with ⟨n, k, hn, hk, rfl⟩,
-  use [g * n * g⁻¹, g * k * g⁻¹, hN.conj_mem n hn g, hK.conj_mem k hk g],
-  simp,
-end⟩
 
 lemma sup_maximal_normal_subgroup {N K : subgroup G} (hN : maximal_normal_subgroup N)
   (hK : maximal_normal_subgroup K) (h : N ≠ K) : N ⊔ K = ⊤ :=

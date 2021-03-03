@@ -26,3 +26,6 @@ def mul_equiv_to_Group_iso {G H : Group} (e : G ≃* H) : G ≅ H :=
 lemma class_eq' {G H : Group} : G ≃* H →
   (quotient.mk' G : isomorphism_classes.obj (Cat.of Group)) = quotient.mk' H :=
 λ h, quotient.eq'.mpr ⟨mul_equiv_to_Group_iso h⟩
+
+instance Group.fintype {G : Type*} [group G] [fintype G] : fintype (Group.of G) :=
+show fintype G, from infer_instance
