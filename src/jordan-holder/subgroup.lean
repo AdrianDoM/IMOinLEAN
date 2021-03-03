@@ -33,8 +33,6 @@ end⟩
 instance (N K : subgroup G) [hN : N.normal] [hK : K.normal] : normal (N ⊓ K) :=
 ⟨λ h hh g, mem_inf.mpr ⟨hN.conj_mem _ (mem_inf.mp hh).1 _, hK.conj_mem _ (mem_inf.mp hh).2 _⟩⟩
 
-instance (N : subgroup G) [N.normal] (e : G ≃* H) : normal (map e.to_monoid_hom N) := sorry
-
 variables {f : G →* H} {g : H →* K}
 
 open monoid_hom
@@ -57,21 +55,32 @@ lemma le_ker_iff_map {K : subgroup G} : K ≤ f.ker ↔ map f K = ⊥ :=
 by rw [ker, eq_bot_iff, gc_map_comap]
 
 lemma range_inclusion {H K : subgroup G} (h : H ≤ K) :
-  (inclusion h).range = comap K.subtype H := sorry
+  (inclusion h).range = comap K.subtype H :=
+begin
+  ext, split,
+  { intro hx, simp [inclusion] at *, rcases hx with ⟨x', rfl⟩, exact x'.prop },
+  intro hx, simp [inclusion] at *, use ⟨x.val, hx⟩, rw subtype.ext_iff_val, refl, 
+end
 
-lemma comap_subtype (H K : subgroup G) : comap K.subtype H = comap K.subtype (K ⊓ H) := sorry
+lemma comap_subtype (H K : subgroup G) : comap K.subtype H = comap K.subtype (K ⊓ H) :=
+le_antisymm (λ x hx, by simpa) ((gc_map_comap K.subtype).monotone_u inf_le_right)
 
 lemma inclusion_injective {H K : subgroup G} {h : H ≤ K} : function.injective (inclusion h)
 | ⟨_, _⟩ ⟨_, _⟩ := subtype.ext_iff_val.2 ∘ subtype.ext_iff_val.1
 
 lemma subsingleton_subgroup_iff {H : subgroup G} : subsingleton H ↔ H = ⊥ :=
-⟨λ h, le_antisymm (λ a ha, sorry) bot_le,
+⟨λ h, le_antisymm (λ a ha, mem_bot.mpr $ subtype.mk_eq_mk.mp $
+  @subsingleton.elim _ h ⟨a, ha⟩ ⟨1, one_mem H⟩) bot_le,
 λ h, subsingleton.intro $ λ ⟨a, ha⟩ ⟨b, hb⟩, by { rw h at *, congr, rw [mem_bot.mp ha, mem_bot.mp hb] }⟩
 
 lemma comap_subtype_top : comap (subgroup.subtype ⊤) = map (equiv_top G).to_monoid_hom :=
 funext $ λ H, by rw [@map_eq_comap_of_inverse _ _ _ _ (equiv_top G).to_monoid_hom
   (equiv_top G).symm.to_monoid_hom (equiv_top G).left_inv (equiv_top G).right_inv,
   equiv_top_symm_apply]
+
+instance (N : subgroup G) [hN : N.normal] (e : G ≃* H) : normal (map e.to_monoid_hom N) :=
+by { rw @map_eq_comap_of_inverse _ _ _ _ e.to_monoid_hom e.symm.to_monoid_hom e.left_inv e.right_inv,
+  apply_instance }
 
 end subgroup
 

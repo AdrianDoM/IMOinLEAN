@@ -72,7 +72,7 @@ def cons' (f : normal_embedding H G) (σ : composition_series H)
 def factors_of_cons' {f : normal_embedding H G} {σ : composition_series H}
   {h : is_simple (quotient f.φ.range) ∧ ¬ subsingleton (quotient f.φ.range)} :
   (cons' f σ h).val.factors = quotient.mk' (Group.of $ quotient f.φ.range) ::ₘ σ.val.factors :=
-sorry
+by simp [cons']
 
 /-- A trivial normal series is always a composition series. -/
 def of_subsingleton (h : subsingleton G) : composition_series G :=
