@@ -47,15 +47,26 @@ lemma map_mk'_eq_top {K : subgroup G} (hNK : N ≤ K) : K.map (mk' N) = ⊤ ↔ 
 lemma le_comap_mk' {K : subgroup (quotient N)} : N ≤ comap (mk' N) K :=
 by conv_lhs { rw ←ker_mk N }; exact ker_le_comap
 
+@[simp]
+lemma mk'_eq_one (x : G) : (mk' N) x = 1 ↔ x ∈ N :=
+by rw [←mem_ker, ker_mk]
+
 lemma subsingleton_quotient_iff : subsingleton (quotient N) ↔ N = ⊤ :=
 ⟨λ h, le_antisymm le_top (λ x _, ker_mk N ▸
   show mk' N x = 1, from @subsingleton.elim _ h (mk' N x) 1),
 λ h, ⟨λ a b, quotient.induction_on₂' a b $ λ x y,
   show ↑x = ↑y, from quotient_group.eq.mpr $ by { rw h, trivial }⟩⟩
 
-noncomputable def equiv_of_subsingleton_quotient (h : subsingleton (quotient N)) : N ≃* G := sorry
-
 variables {H : Type*} [group H]
-def equiv_quotient_of_equiv (e : G ≃* H) : quotient N ≃* quotient (N.map e.to_monoid_hom) := sorry
+def equiv_quotient_of_equiv (e : G ≃* H) : quotient N ≃* quotient (N.map e.to_monoid_hom) :=
+{ to_fun := lift _ ((mk' $ N.map e.to_monoid_hom).comp e.to_monoid_hom) (by simp),
+  inv_fun := lift _ ((mk' N).comp e.symm.to_monoid_hom) (by simp),
+  left_inv := λ x, by
+    { apply x.induction_on', intro a, simp,
+      change (lift _ _ _) (quotient.mk' (e a)) = _, simp, refl },
+  right_inv := λ x, by
+    { apply x.induction_on', intro a, simp,
+      change (lift _ _ _) (quotient.mk' (e.symm a)) = _, simp, refl },
+  map_mul' := by simp }
 
 end quotient_group

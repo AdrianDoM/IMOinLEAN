@@ -55,7 +55,7 @@ def of_normal_subgroup (N : subgroup G) [N.normal] : normal_embedding N G :=
 
 def of_normal_subgroup_to_subgroup {K N : subgroup G} [N.normal] (h : N ≤ K) :
   normal_embedding N K :=
-⟨inclusion h, sorry, sorry⟩
+⟨inclusion h, inclusion_injective, by { rw range_inclusion, apply_instance }⟩
 
 noncomputable def equiv_range (f : normal_embedding G H) : G ≃* f.φ.range :=
 mul_equiv.of_injective f.inj

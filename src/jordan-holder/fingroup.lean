@@ -68,13 +68,16 @@ namespace fingroup
 
 open fintype
 
-#check nat.strong_rec_on
-
 def strong_rec_on_card (G : Type*) (hGg : group G) (hGf : fintype G) 
   {p : Π (G : Type*), group G → fintype G → Sort _} :
   (Π (G : Type*) (hGg : group G) (hGf : fintype G),
     (Π (H : Type*) (hHg : group H) (hHf : fintype H), @card H hHf < @card G hGf → p H hHg hHf) →
-    p G hGg hGf) → p G hGg hGf := sorry
+    p G hGg hGf) → p G hGg hGf :=
+λ ih, suffices h : ∀ (n : ℕ) (G : Type*) (hGg : group G) (hGf : fintype G),
+  @card G hGf = n → p G hGg hGf,
+  from h (@card G hGf) G hGg hGf rfl,
+λ n, n.strong_rec_on $ λ n ih' H hHg hHf hn, ih H hHg hHf $
+  λ K hKg hKf hK, ih' (@card K hKf) (hn ▸ hK) K hKg hKf rfl
   
 end fingroup
 
