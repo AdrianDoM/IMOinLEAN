@@ -2,7 +2,7 @@ import algebra.punit_instances
 import algebra.category.Group
 import group_theory.subgroup
 import group_theory.quotient_group
-import .subgroup
+import .subgroup .quotient_group
 
 open subgroup monoid_hom
 
@@ -76,5 +76,42 @@ end
 noncomputable lemma fintype [fintype G] (f : normal_embedding H G)
   [decidable_pred f.φ.range.carrier] : fintype H :=
 fintype.of_equiv f.φ.range f.equiv_range.to_equiv.symm
+
+variables (f : normal_embedding H G) (g : normal_embedding K G)
+
+noncomputable def from_inf_range_left :
+  normal_embedding ↥(f.φ.range ⊓ g.φ.range) H :=
+comp_mul_equiv (of_normal_subgroup_to_subgroup inf_le_left) (equiv_range f).symm
+
+noncomputable def from_inf_range_right :
+  normal_embedding ↥(f.φ.range ⊓ g.φ.range) K :=
+comp_mul_equiv (of_normal_subgroup_to_subgroup inf_le_right) (equiv_range g).symm
+
+noncomputable def quotient_from_inf_range_left (h : f.φ.range ⊔ g.φ.range = ⊤) :
+  quotient (from_inf_range_left f g).φ.range ≃* quotient g.φ.range :=
+have h1 : quotient (from_inf_range_left f g).φ.range ≃*
+  quotient (comap f.φ.range.subtype (f.φ.range ⊓ g.φ.range)),
+by { apply (equiv_quotient_of_eq _).trans (equiv_quotient_of_equiv (equiv_range f).symm).symm,
+  simp [from_inf_range_left, comp_mul_equiv, range_comp], congr,
+  rw [comap_subtype, ←@range_inclusion _ _ _ f.φ.range inf_le_left], refl },
+suffices h2 : quotient g.φ.range ≃* quotient (comap (f.φ.range ⊔ g.φ.range).subtype g.φ.range),
+from h1.trans $ (quotient_inf_equiv_prod_normal_quotient _ _).trans h2.symm,
+by { rw h, apply (equiv_quotient_of_equiv $ equiv_top G).trans (equiv_quotient_of_eq _),
+  rw comap_subtype_top }
+
+noncomputable def quotient_from_inf_range_right (h : f.φ.range ⊔ g.φ.range = ⊤) :
+  quotient (from_inf_range_right f g).φ.range ≃* quotient f.φ.range :=
+have h1 : quotient (from_inf_range_right f g).φ.range ≃*
+  quotient (comap g.φ.range.subtype (f.φ.range ⊓ g.φ.range)),
+by { apply (equiv_quotient_of_eq _).trans (equiv_quotient_of_equiv (equiv_range g).symm).symm,
+  simp [from_inf_range_right, comp_mul_equiv, range_comp], congr,
+  rw comap_subtype, conv_rhs { rw inf_comm },
+  rw ←@range_inclusion _ _ _ g.φ.range inf_le_right, refl },
+suffices h2 : quotient f.φ.range ≃* quotient (comap (f.φ.range ⊔ g.φ.range).subtype f.φ.range),
+by { apply h1.trans (mul_equiv.trans _ h2.symm), rw sup_comm,
+  apply (equiv_quotient_of_eq _).trans (quotient_inf_equiv_prod_normal_quotient _ _),
+  rw inf_comm },
+by { rw h, apply (equiv_quotient_of_equiv $ equiv_top G).trans (equiv_quotient_of_eq _),
+  rw comap_subtype_top }
 
 end normal_embedding

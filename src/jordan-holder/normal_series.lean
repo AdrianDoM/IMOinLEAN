@@ -62,7 +62,7 @@ open normal_series multiset fingroup
 
 /-- Construct a composition series for `G` from a composition series for `H`, a normal embedding
 of `H` into `G` and a proof that the new factor introduced is simple and nontrivial. -/
-def cons' (f : normal_embedding H G) (σ : composition_series H)
+def cons' (σ : composition_series H) (f : normal_embedding H G) 
   (h : is_simple (quotient f.φ.range) ∧ ¬ subsingleton (quotient f.φ.range)) :
   composition_series G :=
 ⟨cons _ _ f σ.val, λ G' hG',
@@ -71,7 +71,7 @@ def cons' (f : normal_embedding H G) (σ : composition_series H)
 @[simp]
 def factors_of_cons' {f : normal_embedding H G} {σ : composition_series H}
   {h : is_simple (quotient f.φ.range) ∧ ¬ subsingleton (quotient f.φ.range)} :
-  (cons' f σ h).val.factors = quotient.mk' (Group.of $ quotient f.φ.range) ::ₘ σ.val.factors :=
+  (cons' σ f h).val.factors = quotient.mk' (Group.of $ quotient f.φ.range) ::ₘ σ.val.factors :=
 by simp [cons']
 
 /-- A trivial normal series is always a composition series. -/
@@ -207,45 +207,21 @@ suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G) (σ τ : composition_ser
   have htop := sup_maximal_normal_subgroup (maximal_normal_subgroup_of_cons hs)
     (maximal_normal_subgroup_of_cons ht) h,
   have ρ := exists_composition_series_of_finite (Group.of ↥(f.φ.range ⊓ g.φ.range)),
-  let f' : normal_embedding (Group.of ↥(f.φ.range ⊓ g.φ.range)) H :=
-    comp_mul_equiv (of_normal_subgroup_to_subgroup inf_le_left) (equiv_range f).symm,
-  have hf' : quotient f'.φ.range ≃* quotient (comap f.φ.range.subtype (f.φ.range ⊓ g.φ.range)),
-  { apply mul_equiv.trans _ (equiv_quotient_of_equiv (equiv_range f).symm).symm,
-    apply equiv_quotient_of_eq, simp [f', comp_mul_equiv, range_comp], congr' 1,
-    rw [comap_subtype, ←@range_inclusion _ _ _ f.φ.range inf_le_left], refl },
-  have hf'₂ : quotient f'.φ.range ≃* quotient g.φ.range,
-  { apply mul_equiv.trans hf',
-    suffices h : quotient g.φ.range ≃* quotient (comap (f.φ.range ⊔ g.φ.range).subtype g.φ.range),
-    from (quotient_inf_equiv_prod_normal_quotient _ _).trans h.symm,
-    rw htop, apply mul_equiv.trans (equiv_quotient_of_equiv $ equiv_top G),
-    apply equiv_quotient_of_eq, rw comap_subtype_top },
-  let g' : normal_embedding (Group.of ↥(f.φ.range ⊓ g.φ.range)) K :=
-    comp_mul_equiv (of_normal_subgroup_to_subgroup inf_le_right) (equiv_range g).symm,
-  have hg' : quotient g'.φ.range ≃* quotient (comap g.φ.range.subtype (f.φ.range ⊓ g.φ.range)),
-  { apply mul_equiv.trans _ (equiv_quotient_of_equiv (equiv_range g).symm).symm,
-    apply equiv_quotient_of_eq, simp [g', comp_mul_equiv, range_comp], congr' 1,
-    rw comap_subtype, conv_rhs { rw inf_comm },
-    rw ←@range_inclusion _ _ _ g.φ.range inf_le_right, refl },
-  have hg'₂ : quotient g'.φ.range ≃* quotient f.φ.range,
-  { suffices h : quotient f.φ.range ≃* quotient (comap (f.φ.range ⊔ g.φ.range).subtype f.φ.range),
-    { apply hg'.trans (mul_equiv.trans _ h.symm), rw sup_comm,
-      apply mul_equiv.trans _ (quotient_inf_equiv_prod_normal_quotient _ _),
-      apply equiv_quotient_of_eq, rw inf_comm },
-    rw htop, apply mul_equiv.trans (equiv_quotient_of_equiv $ equiv_top G),
-    apply equiv_quotient_of_eq, rw comap_subtype_top },
   have := (maximal_normal_subgroup_iff _).mp (maximal_normal_subgroup_of_cons ht),
-  let s' : composition_series H := cons' f' ρ
-    ⟨(mul_equiv_is_simple_iff hf'₂).mpr this.1, λ h, this.2 $ hf'₂.to_equiv.subsingleton_iff.mp h⟩,
+  let s' : composition_series H := cons' ρ (from_inf_range_left f g)
+    ⟨(mul_equiv_is_simple_iff $ quotient_from_inf_range_left f g htop).mpr this.1,
+    λ h, this.2 $ (quotient_from_inf_range_left f g htop).to_equiv.subsingleton_iff.mp h⟩,
   have := (maximal_normal_subgroup_iff _).mp (maximal_normal_subgroup_of_cons hs),
-  let t' : composition_series K := cons' g' ρ 
-    ⟨(mul_equiv_is_simple_iff hg'₂).mpr this.1, λ h, this.2 $ hg'₂.to_equiv.subsingleton_iff.mp h⟩,
+  let t' : composition_series K := cons' ρ (from_inf_range_right f g) 
+    ⟨(mul_equiv_is_simple_iff $ quotient_from_inf_range_right f g htop).mpr this.1,
+    λ h, this.2 $ (quotient_from_inf_range_right f g htop).to_equiv.subsingleton_iff.mp h⟩,
   have hs' := ih (@fintype.card H f.fintype) (hn ▸ card_lt_of_cons hs) H f.fintype s' (of_cons hs) rfl,
   have ht' := ih (@fintype.card K g.fintype) (hn ▸ card_lt_of_cons ht) K g.fintype t' (of_cons ht) rfl,
   rw [factors_of_of_cons hs, factors_of_cons'] at hs', rw ←hs',
   rw [factors_of_of_cons ht, factors_of_cons'] at ht', rw ←ht',
   conv_rhs { rw multiset.cons_swap }, congr' 1,
-  { apply class_eq, exact hg'₂.symm },
-  congr' 1, apply class_eq, exact hf'₂,
+  { exact class_eq (quotient_from_inf_range_right f g htop).symm },
+  congr' 1, exact class_eq (quotient_from_inf_range_left f g htop),
 end
 
 end compositon_series
