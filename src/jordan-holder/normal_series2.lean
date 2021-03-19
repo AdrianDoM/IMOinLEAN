@@ -23,6 +23,11 @@ structure normal_series (G : Type*) [group G] :=
 (normal : ∀ (i : ℕ) (h : i + 1 < series.length),
   series.nth_le i (nat.lt_of_succ_lt h) ◃ series.nth_le (i + 1) h)
 
+variables {G : Type*} [group G]
+variable σ : normal_series G
+
+#check σ.normal
+
 namespace normal_series
 
 end normal_series

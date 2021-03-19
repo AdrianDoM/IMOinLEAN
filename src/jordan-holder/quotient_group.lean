@@ -11,14 +11,17 @@ namespace quotient_group
 
 variables {G : Type*} [group G]
 
+@[to_additive]
 lemma subsingleton_of_subgroup_quotient_subsingleton {N : subgroup G} :
   subsingleton N → subsingleton (quotient N) → subsingleton G :=
 λ hN hqN, @equiv.subsingleton G (quotient N × N) group_equiv_quotient_times_subgroup
   (@subsingleton.prod _ _ hqN hN)
 
+@[to_additive]
 lemma mk'_surjective (N : subgroup G) [N.normal] : function.surjective (mk' N) :=
 surjective_quot_mk _
 
+@[to_additive]
 def quotient_bot : quotient (⊥ : subgroup G) ≃* G :=
 { to_fun := lift ⊥ (id G) (λ x hx, (mem_bot.mp hx).symm ▸ rfl), inv_fun := mk' ⊥,
   left_inv := λ x, x.induction_on' $ by { intro a, simp only [lift_mk', id_apply], refl },
@@ -27,6 +30,7 @@ def quotient_bot : quotient (⊥ : subgroup G) ≃* G :=
 
 variables {N : subgroup G} [normal N]
 
+@[to_additive]
 lemma map_mk'_normal {K : subgroup G} [hK : normal K] (h : N ≤ K) : normal (K.map (mk' N)) :=
 ⟨begin
   intros n hn, rcases mem_map.mp hn with ⟨k, hk, rfl⟩,
@@ -34,6 +38,7 @@ lemma map_mk'_normal {K : subgroup G} [hK : normal K] (h : N ≤ K) : normal (K.
   use [g * k * g⁻¹, hK.conj_mem k hk g], simp, refl,
 end⟩
 
+@[to_additive]
 lemma map_mk'_eq_top {K : subgroup G} (hNK : N ≤ K) : K.map (mk' N) = ⊤ ↔ K = ⊤ :=
 ⟨λ h, le_antisymm le_top (λ g _,
   have hg : (mk' N) g ∈ K.map (mk' N) := h.symm ▸ mem_top ((mk' N) g),
@@ -44,13 +49,15 @@ lemma map_mk'_eq_top {K : subgroup G} (hNK : N ≤ K) : K.map (mk' N) = ⊤ ↔ 
   end),
 λ h, ext' $ h.symm ▸ set.image_univ_of_surjective (surjective_quot_mk _)⟩
 
+@[to_additive]
 lemma le_comap_mk' {K : subgroup (quotient N)} : N ≤ comap (mk' N) K :=
 by conv_lhs { rw ←ker_mk N }; exact ker_le_comap
 
-@[simp]
+@[simp, to_additive]
 lemma mk'_eq_one (x : G) : (mk' N) x = 1 ↔ x ∈ N :=
 by rw [←mem_ker, ker_mk]
 
+@[to_additive]
 lemma subsingleton_quotient_iff : subsingleton (quotient N) ↔ N = ⊤ :=
 ⟨λ h, le_antisymm le_top (λ x _, ker_mk N ▸
   show mk' N x = 1, from @subsingleton.elim _ h (mk' N x) 1),
@@ -58,6 +65,7 @@ lemma subsingleton_quotient_iff : subsingleton (quotient N) ↔ N = ⊤ :=
   show ↑x = ↑y, from quotient_group.eq.mpr $ by { rw h, trivial }⟩⟩
 
 variables {H : Type*} [group H]
+@[to_additive]
 def equiv_quotient_of_equiv (e : G ≃* H) : quotient N ≃* quotient (N.map e.to_monoid_hom) :=
 { to_fun := lift _ ((mk' $ N.map e.to_monoid_hom).comp e.to_monoid_hom) (by simp),
   inv_fun := lift _ ((mk' N).comp e.symm.to_monoid_hom) (by simp),

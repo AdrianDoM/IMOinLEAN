@@ -6,10 +6,12 @@ import .simple_group .quotient_group
 namespace subgroup
 variables {G : Type*} [group G] [fintype G]
 
+@[to_additive]
 lemma card_pos : fintype.card G > 0 := fintype.card_pos_iff.mpr ⟨1⟩
 
 variables {H : subgroup G} [decidable_pred H.carrier]
 
+@[to_additive]
 lemma card_lt : H ≠ ⊤ → fintype.card H < fintype.card G :=
 begin
   contrapose!, intro h, apply eq_top_of_card_eq H (le_antisymm _ h),
@@ -24,6 +26,22 @@ end) bot_le
 
 end subgroup
 
+namespace add_subgroup
+
+variables {G : Type*} [add_group G] [fintype G]
+variables {H : add_subgroup G} [decidable_pred H.carrier]
+
+/- The to_additive attribute doesn't work in this case because it also changes the 1
+in the conclusion to a 0-/
+lemma eq_bot_of_card_eq_one : fintype.card H = 1 → H = ⊥ :=
+λ h, le_antisymm (λ x hx, begin
+  rcases fintype.card_eq_one_iff.mp h with ⟨y, hy⟩, rw mem_bot,
+  simpa using (hy ⟨x, hx⟩).trans (hy ⟨(0 : G), H.zero_mem⟩).symm,
+end) bot_le
+
+end add_subgroup
+
+attribute [to_additive add_subgroup.eq_bot_of_card_eq_one] subgroup.eq_bot_of_card_eq_one
 
 namespace fintype
 
@@ -40,12 +58,15 @@ card_ge_of_surjective quotient.mk $ surjective_quotient_mk _
 
 end fintype
 
+namespace quotient_add_group
 
-namespace quotient_group
+open add_subgroup
 
-variables {G : Type*} [group G] [fintype G]
-variables {N : subgroup G} [subgroup.normal N] [decidable_pred (λ a, a ∈ N)] [decidable_pred N.carrier]
+variables {G : Type*} [add_group G] [fintype G]
+variables {N : add_subgroup G} [add_subgroup.normal N]
+  [decidable_pred (λ a, a ∈ N)] [decidable_pred N.carrier]
 
+/- TODO: add to_additive's in order_of_element.lean file. -/
 lemma eq_bot_of_card_quotient_eq : fintype.card (quotient N) = fintype.card G → N = ⊥ :=
 begin
   intro h, rw card_eq_card_quotient_mul_card_subgroup N at h,
@@ -54,6 +75,23 @@ begin
   apply nat.eq_of_mul_eq_mul_left subgroup.card_pos h.symm,
 end
 
+end quotient_add_group
+
+namespace quotient_group
+
+variables {G : Type*} [group G] [fintype G]
+variables {N : subgroup G} [subgroup.normal N] [decidable_pred (λ a, a ∈ N)] [decidable_pred N.carrier]
+
+@[to_additive]
+lemma eq_bot_of_card_quotient_eq : fintype.card (quotient N) = fintype.card G → N = ⊥ :=
+begin
+  intro h, rw card_eq_card_quotient_mul_card_subgroup N at h,
+  conv_lhs at h { rw ←nat.mul_one (fintype.card (quotient N)) },
+  apply subgroup.eq_bot_of_card_eq_one,
+  apply nat.eq_of_mul_eq_mul_left subgroup.card_pos h.symm,
+end
+
+@[to_additive]
 lemma card_quotient_lt :
   N ≠ ⊥ → fintype.card (quotient N) < fintype.card G :=
 begin
@@ -68,6 +106,7 @@ namespace fingroup
 
 open fintype
 
+@[to_additive add_fingroup.strong_rec_on_card]
 def strong_rec_on_card (G : Type*) (hGg : group G) (hGf : fintype G) 
   {p : Π (G : Type*), group G → fintype G → Sort _} :
   (Π (G : Type*) (hGg : group G) (hGf : fintype G),
@@ -90,6 +129,7 @@ variables {G : Type*} [group G]
 
 local attribute [instance] classical.prop_decidable
 
+@[to_additive]
 lemma exists_maximal_normal_subgroup_aux
   (G : Type*) (hGg : group G) (hGf : fintype G) :
   ¬ subsingleton G → ∃ (N : subgroup G), maximal_normal_subgroup N :=
@@ -113,10 +153,12 @@ fingroup.strong_rec_on_card G hGg hGf begin
   right, exact (map_mk'_eq_top hNL).mp h_1,
 end
 
+@[to_additive]
 lemma exists_maximal_normal_subgroup [fintype G] (h : ¬ subsingleton G) :
   ∃ (N : subgroup G), maximal_normal_subgroup N :=
 exists_maximal_normal_subgroup_aux G infer_instance infer_instance h
 
+@[to_additive]
 lemma maximal_normal_subgroup_iff (N : subgroup G) [N.normal] :
   maximal_normal_subgroup N ↔
   is_simple (quotient_group.quotient N) ∧ ¬ subsingleton (quotient_group.quotient N) :=

@@ -3,6 +3,7 @@ Author: Adrián Doña Mateo
 -/
 
 import data.real.basic
+import data.real.sqrt
 
 /-!
 # IMO 2017 Q2
@@ -98,7 +99,7 @@ end
 lemma root_of_nonneg_disc {a b : ℝ} (h : 0 ≤ a * a - 4 * b) :
 	∃ x y, x + y = a ∧ x * y = b :=
 begin
-	set d := a * a - 4 * b with hd,
+	let d := a * a - 4 * b,
 	use [(a + sqrt d) / 2, (a - sqrt d) / 2],
 	split, { ring },
 	rw div_mul_div,
@@ -119,7 +120,6 @@ begin
 		... = f b + ↑(N + 1)   : by rw hfab
 		... = f b + N + 1      : by { rw [int.cast_add, ← add_assoc], norm_cast }
 		... = f (b + N) + 1    : by rw ← sol_at_add_n hf h0,
-	simp at haddN,
 	let N := ⌈-b - 1⌉,
 	have hN : ↑N < -b := by { simp [N], convert ceil_lt_add_one (-b - 1), ring },
 	have habN : 0 ≤ (a + N + 1) * (a + N + 1) - 4 * (b + N),

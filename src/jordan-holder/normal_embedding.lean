@@ -7,28 +7,39 @@ import .subgroup .quotient_group
 open subgroup monoid_hom
 
 structure normal_embedding (G H : Type*) [group G] [group H]
-  extends φ : monoid_hom G H :=
-(inj : function.injective φ.to_fun)
+  extends φ : G →* H :=
+(inj : function.injective φ)
 (norm : φ.range.normal)
+
+structure add_normal_embedding (G H : Type*) [add_group G] [add_group H]
+  extends φ : G →+ H :=
+(inj : function.injective φ)
+(norm : φ.range.normal)
+
+attribute [to_additive add_normal_embedding] normal_embedding
 
 namespace normal_embedding
 
 variables {G H K : Type*} [group G] [group H] [group K]
 
+@[to_additive]
 instance normal (f : normal_embedding G H) : f.φ.range.normal := f.norm
 
 /- Coerce a normal embedding to a group homomorphism -/
+@[to_additive]
 instance : has_coe (normal_embedding G H) (G →* H) := ⟨normal_embedding.φ⟩
 
 /- The unique normal embedding from the trivial group to any group -/
+@[to_additive]
 def from_subsingleton (hG : subsingleton G) (H : Type*) [group H] : normal_embedding G H :=
 ⟨1, λ x y _, subsingleton.elim x y, (@monoid_hom.range_one G H _ _).symm ▸ subgroup.bot_normal⟩
 
-@[simp]
+@[simp, to_additive]
 lemma from_subsingleton_range {hG : subsingleton G} : (from_subsingleton hG H).φ.range = ⊥ :=
 le_antisymm (by { rintros x ⟨y, rfl⟩, rw [subsingleton.elim y 1, map_one, mem_bot] }) bot_le
 
 /- A group isomorphism induces a normal embedding -/
+@[to_additive]
 def of_mul_equiv (h : G ≃* H) : normal_embedding G H :=
 ⟨h.to_monoid_hom, h.left_inv.injective,
   suffices heq : h.to_monoid_hom.range = ⊤, from heq.substr subgroup.top_normal,
@@ -36,30 +47,32 @@ def of_mul_equiv (h : G ≃* H) : normal_embedding G H :=
 
 /- A normal embedding from `G` to `H` can be composed with a group isomorphism
 `H ≃* K` to produce a normal embedding from `G` to `K` -/
+@[to_additive]
 def comp_mul_equiv (f : normal_embedding G H) (h : H ≃* K) : normal_embedding G K :=
-⟨h.to_monoid_hom.comp f, function.injective.comp h.left_inv.injective f.inj, 
-  begin
-    rw range_eq_map, convert normal.comap f.norm h.symm.to_monoid_hom,
-    rw ← @map_eq_comap_of_inverse _ _ _ _ h.to_monoid_hom h.symm.to_monoid_hom h.left_inv h.right_inv,
-    rw [← map_map, ← range_eq_map], refl
-  end⟩
+{ φ := h.to_monoid_hom.comp f,
+  inj := function.injective.comp h.left_inv.injective f.inj, 
+  norm := by rw range_comp; exact normal.mul_equiv_map f.norm h }
 
 open quotient_group
 
+@[to_additive]
 instance group_quotient (f : normal_embedding G H) : group (quotient f.φ.range) :=
 by haveI := f.norm; apply_instance
 
-@[simp]
+@[simp, to_additive]
 def of_normal_subgroup (N : subgroup G) [N.normal] : normal_embedding N G :=
 ⟨N.subtype, λ x y hx, by simpa using hx, (range_subtype N).symm ▸ infer_instance⟩
 
+@[to_additive]
 def of_normal_subgroup_to_subgroup {K N : subgroup G} [N.normal] (h : N ≤ K) :
   normal_embedding N K :=
 ⟨inclusion h, inclusion_injective, by { rw range_inclusion, apply_instance }⟩
 
+@[to_additive]
 noncomputable def equiv_range (f : normal_embedding G H) : G ≃* f.φ.range :=
 mul_equiv.of_injective f.inj
 
+@[to_additive]
 noncomputable def equiv_quotient_comp_mul_equiv (f : normal_embedding G H) (e : H ≃* K) :
   quotient (comp_mul_equiv f e).φ.range ≃* quotient f.φ.range :=
 let ψ : K →* quotient f.φ.range := (mk' f.φ.range).comp e.symm.to_monoid_hom in
@@ -73,20 +86,24 @@ begin
   rw this, simp [range_eq_map, ←map_map], refl,
 end
 
+@[to_additive]
 noncomputable lemma fintype [fintype G] (f : normal_embedding H G)
   [decidable_pred f.φ.range.carrier] : fintype H :=
 fintype.of_equiv f.φ.range f.equiv_range.to_equiv.symm
 
 variables (f : normal_embedding H G) (g : normal_embedding K G)
 
+@[to_additive]
 noncomputable def from_inf_range_left :
   normal_embedding ↥(f.φ.range ⊓ g.φ.range) H :=
 comp_mul_equiv (of_normal_subgroup_to_subgroup inf_le_left) (equiv_range f).symm
 
+@[to_additive]
 noncomputable def from_inf_range_right :
   normal_embedding ↥(f.φ.range ⊓ g.φ.range) K :=
 comp_mul_equiv (of_normal_subgroup_to_subgroup inf_le_right) (equiv_range g).symm
 
+@[to_additive]
 noncomputable def quotient_from_inf_range_left (h : f.φ.range ⊔ g.φ.range = ⊤) :
   quotient (from_inf_range_left f g).φ.range ≃* quotient g.φ.range :=
 have h1 : quotient (from_inf_range_left f g).φ.range ≃*
@@ -99,6 +116,7 @@ from h1.trans $ (quotient_inf_equiv_prod_normal_quotient _ _).trans h2.symm,
 by { rw h, apply (equiv_quotient_of_equiv $ equiv_top G).trans (equiv_quotient_of_eq _),
   rw comap_subtype_top }
 
+@[to_additive]
 noncomputable def quotient_from_inf_range_right (h : f.φ.range ⊔ g.φ.range = ⊤) :
   quotient (from_inf_range_right f g).φ.range ≃* quotient f.φ.range :=
 have h1 : quotient (from_inf_range_right f g).φ.range ≃*

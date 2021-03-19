@@ -163,7 +163,7 @@ begin
 	rcases cross_of_des ddes 0 1 _ with ⟨n, _, hn⟩, swap,
 	{	rw d_one, exact hpos 0 },
 	use [n, ineq_iff.mpr hn],
-	have huniq : _ := unique_cross_of_des ddes 0 n hn,
+	have huniq := unique_cross_of_des ddes 0 n hn,
 	intros m hm,
 	exact huniq m (ineq_iff.mp hm),
 end

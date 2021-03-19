@@ -45,11 +45,8 @@ end
 lemma a_succ_of_not_sq {a₀ n : ℕ} (h : ¬ ∃ k, k * k = a a₀ n) :
 	a a₀ (n + 1) = a a₀ n + 3 :=
 begin
-	simp [a],
-	split_ifs with hsq, swap,
-	{ refl },
-	exfalso,
-	exact h ⟨sqrt (a a₀ n), hsq⟩,
+	simp [a], intro h1,
+	exfalso, exact h ⟨sqrt (a a₀ n), h1⟩,
 end
 
 /- Convenience lemma to determine terms of the sequence in a run of not squares -/
