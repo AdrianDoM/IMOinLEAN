@@ -35,3 +35,12 @@ lemma class_eq' {G H : Group} : G ≃* H →
 @[to_additive]
 instance Group.fintype {G : Type*} [group G] [fintype G] : fintype (Group.of G) :=
 show fintype G, from infer_instance
+
+@[to_additive is_finite_add_class]
+def is_finite_class (C : isomorphism_classes.obj (Cat.of Group)) : Prop :=
+quotient.lift_on' C (λ (G : Group), nonempty (fintype G))
+  (λ G H ⟨h⟩, eq_iff_iff.mpr
+    ⟨λ ⟨hG⟩, ⟨@fintype.of_equiv _ _ hG h.Group_iso_to_mul_equiv.to_equiv⟩,
+    λ ⟨hH⟩, ⟨@fintype.of_equiv _ _ hH h.Group_iso_to_mul_equiv.to_equiv.symm⟩⟩)
+
+def class_card (C : isomorphism_classes.obj (Cat.of Group)) (h : is_finite_class C) : ℕ := sorry

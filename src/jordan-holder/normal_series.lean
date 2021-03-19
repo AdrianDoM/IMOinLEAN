@@ -93,6 +93,10 @@ end normal_series
 def composition_series (G : Group.{u}) : Type (u+1) :=
 { σ : normal_series G // ∀ G' ∈ σ.factors, is_simple_class G' ∧ ¬ is_trivial_class G' }
 
+namespace add_composition_series
+-- The namespace needs to exists so that to_additive translations can populate it.
+end add_composition_series
+
 namespace composition_series
 
 open normal_series multiset fingroup
@@ -274,5 +278,3 @@ suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G) (σ τ : composition_ser
 end
 
 end composition_series
-
-open composition_series
