@@ -43,4 +43,25 @@ quotient.lift_on' C (λ (G : Group), nonempty (fintype G))
     ⟨λ ⟨hG⟩, ⟨@fintype.of_equiv _ _ hG h.Group_iso_to_mul_equiv.to_equiv⟩,
     λ ⟨hH⟩, ⟨@fintype.of_equiv _ _ hH h.Group_iso_to_mul_equiv.to_equiv.symm⟩⟩)
 
-def class_card (C : isomorphism_classes.obj (Cat.of Group)) (h : is_finite_class C) : ℕ := sorry
+@[to_additive is_finite_add_class_mk']
+lemma is_finite_class_mk' {G : Group} (hG : fintype G) :
+  is_finite_class (quotient.mk' G) :=
+by simp [is_finite_class, quotient.lift_on'_mk']; use hG
+
+@[to_additive add_class_card]
+noncomputable def class_card (C : isomorphism_classes.obj (Cat.of Group))
+  (h : is_finite_class C) : ℕ :=
+begin
+  let G : Group := quotient.out' C,
+  dsimp [is_finite_class] at h,
+  rw [←quotient.out_eq' C, quotient.lift_on'_mk'] at h,
+  exact @fintype.card G h.some,
+end
+
+@[to_additive add_class_card_mk']
+lemma class_card_mk' {G : Group} (hG : fintype G) :
+  class_card (quotient.mk' G) (is_finite_class_mk' hG) = @fintype.card G hG :=
+begin
+  apply fintype.card_eq.mpr ⟨(iso.Group_iso_to_mul_equiv _).to_equiv⟩,
+  exact (@quotient.mk_out' _ (is_isomorphic_setoid _) G).some,
+end

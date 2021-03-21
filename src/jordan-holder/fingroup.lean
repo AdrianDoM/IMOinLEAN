@@ -69,7 +69,7 @@ variables {N : add_subgroup G} [add_subgroup.normal N]
 /- TODO: add to_additive's in order_of_element.lean file. -/
 lemma eq_bot_of_card_quotient_eq : fintype.card (quotient N) = fintype.card G → N = ⊥ :=
 begin
-  intro h, rw card_eq_card_quotient_mul_card_subgroup N at h,
+  intro h, rw card_eq_card_quotient_mul_card_subgroup N at h, -- FIXME:
   conv_lhs at h { rw ←nat.mul_one (fintype.card (quotient N)) },
   apply subgroup.eq_bot_of_card_eq_one,
   apply nat.eq_of_mul_eq_mul_left subgroup.card_pos h.symm,
@@ -120,6 +120,21 @@ def strong_rec_on_card (G : Type*) (hGg : group G) (hGf : fintype G)
   
 end fingroup
 
+lemma add_subgroup.not_subsingleton_of_prime_card {G : Type*} [add_group G] [fintype G] :
+  nat.prime (fintype.card G) → ¬ subsingleton G :=
+λ h1 h2,
+have h : fintype.card G = 1 := fintype.card_eq_one_iff.mpr ⟨0, λ g, @subsingleton.elim _ h2 g 0⟩,
+by { rw [h] at h1, exact nat.not_prime_one h1 }
+
+lemma add_subgroup.simple_of_prime_card {G : Type*} [add_group G] [fintype G] :
+  nat.prime (fintype.card G) → is_simple_add G :=
+λ h N _, begin
+  have hp := card_subgroup_dvd_card N, -- FIXME:
+  rw nat.dvd_prime h at hp,
+  cases hp,
+  { left, exact eq_bot_of_card_eq_one hp },
+  right, exact not_not.mp (not_imp_not.mpr card_lt (not_lt_of_ge $ ge_of_eq hp)),
+end
 
 namespace subgroup
 
@@ -127,7 +142,24 @@ open quotient_group
 
 variables {G : Type*} [group G]
 
+@[to_additive]
+lemma not_subsingleton_of_prime_card [fintype G] : nat.prime (fintype.card G) → ¬ subsingleton G :=
+λ h1 h2,
+have h : fintype.card G = 1 := fintype.card_eq_one_iff.mpr ⟨1, λ g, @subsingleton.elim _ h2 g 1⟩,
+by { rw [h] at h1, exact nat.not_prime_one h1 }
+
 local attribute [instance] classical.prop_decidable
+
+@[to_additive]
+lemma simple_of_prime_card [fintype G] : nat.prime (fintype.card G) → is_simple G :=
+λ h N _, begin
+  have hp := card_subgroup_dvd_card N,
+  rw nat.dvd_prime h at hp,
+  cases hp,
+  { left, exact eq_bot_of_card_eq_one hp },
+  right, exact not_not.mp (not_imp_not.mpr card_lt (not_lt_of_ge $ ge_of_eq hp)),
+end
+
 
 @[to_additive]
 lemma exists_maximal_normal_subgroup_aux

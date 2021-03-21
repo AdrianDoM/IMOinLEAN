@@ -5,8 +5,6 @@ namespace add_subgroup
 
 variables {G : Type*} [add_group G]
 
-#check add_normal
-
 instance sup_normal (N K : add_subgroup G) [hN : N.normal] [hK : K.normal] : normal (N ⊔ K) :=
 ⟨λ h (hh : h ∈ ↑(N ⊔ K)) g, show g + h + -g ∈ ↑(N ⊔ K), begin
   rw add_normal at *, rcases hh with ⟨n, k, hn, hk, rfl⟩,
