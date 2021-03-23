@@ -1,5 +1,6 @@
 import algebra.category.Group
 import category_theory.isomorphism_classes
+import .fingroup .simple_group
 
 open category_theory
 
@@ -36,8 +37,10 @@ lemma class_eq' {G H : Group} : G ≃* H →
 instance Group.fintype {G : Type*} [group G] [fintype G] : fintype (Group.of G) :=
 show fintype G, from infer_instance
 
+variable (C : isomorphism_classes.obj (Cat.of Group))
+
 @[to_additive is_finite_add_class]
-def is_finite_class (C : isomorphism_classes.obj (Cat.of Group)) : Prop :=
+def is_finite_class : Prop :=
 quotient.lift_on' C (λ (G : Group), nonempty (fintype G))
   (λ G H ⟨h⟩, eq_iff_iff.mpr
     ⟨λ ⟨hG⟩, ⟨@fintype.of_equiv _ _ hG h.Group_iso_to_mul_equiv.to_equiv⟩,
@@ -49,8 +52,7 @@ lemma is_finite_class_mk' {G : Group} (hG : fintype G) :
 by simp [is_finite_class, quotient.lift_on'_mk']; use hG
 
 @[to_additive add_class_card]
-noncomputable def class_card (C : isomorphism_classes.obj (Cat.of Group))
-  (h : is_finite_class C) : ℕ :=
+noncomputable def class_card (h : is_finite_class C) : ℕ :=
 begin
   let G : Group := quotient.out' C,
   dsimp [is_finite_class] at h,
@@ -64,4 +66,28 @@ lemma class_card_mk' {G : Group} (hG : fintype G) :
 begin
   apply fintype.card_eq.mpr ⟨(iso.Group_iso_to_mul_equiv _).to_equiv⟩,
   exact (@quotient.mk_out' _ (is_isomorphic_setoid _) G).some,
+end
+
+variable {C}
+variables (hC : is_finite_class C) (h : (class_card C hC).prime)
+include h
+
+@[to_additive not_is_trivial_add_class_of_prime_card]
+lemma not_is_trivial_class_of_prime_card : ¬ is_trivial_class C :=
+begin
+  dsimp [is_trivial_class], dsimp [is_finite_class] at hC,
+  rw [←quotient.out_eq' C, quotient.lift_on'_mk'] at *,
+  haveI := hC.some,
+  apply subgroup.not_subsingleton_of_prime_card,
+  simpa only [←class_card_mk', quotient.out_eq'],
+end
+
+@[to_additive is_simple_add_class_of_prime_card]
+lemma is_simple_class_of_prime_card : is_simple_class C :=
+begin
+  dsimp [is_simple_class], dsimp [is_finite_class] at hC,
+  rw [←quotient.out_eq' C, quotient.lift_on'_mk'] at *,
+  haveI := hC.some,
+  apply subgroup.is_simple_of_prime_card,
+  simpa only [←class_card_mk', quotient.out_eq'],
 end

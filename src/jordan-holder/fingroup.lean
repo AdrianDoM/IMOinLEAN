@@ -126,7 +126,7 @@ lemma add_subgroup.not_subsingleton_of_prime_card {G : Type*} [add_group G] [fin
 have h : fintype.card G = 1 := fintype.card_eq_one_iff.mpr ⟨0, λ g, @subsingleton.elim _ h2 g 0⟩,
 by { rw [h] at h1, exact nat.not_prime_one h1 }
 
-lemma add_subgroup.simple_of_prime_card {G : Type*} [add_group G] [fintype G] :
+lemma add_subgroup.is_simple_of_prime_card {G : Type*} [add_group G] [fintype G] :
   nat.prime (fintype.card G) → is_simple_add G :=
 λ h N _, begin
   have hp := card_subgroup_dvd_card N, -- FIXME:
@@ -151,7 +151,7 @@ by { rw [h] at h1, exact nat.not_prime_one h1 }
 local attribute [instance] classical.prop_decidable
 
 @[to_additive]
-lemma simple_of_prime_card [fintype G] : nat.prime (fintype.card G) → is_simple G :=
+lemma is_simple_of_prime_card [fintype G] : nat.prime (fintype.card G) → is_simple G :=
 λ h N _, begin
   have hp := card_subgroup_dvd_card N,
   rw nat.dvd_prime h at hp,
@@ -159,7 +159,6 @@ lemma simple_of_prime_card [fintype G] : nat.prime (fintype.card G) → is_simpl
   { left, exact eq_bot_of_card_eq_one hp },
   right, exact not_not.mp (not_imp_not.mpr card_lt (not_lt_of_ge $ ge_of_eq hp)),
 end
-
 
 @[to_additive]
 lemma exists_maximal_normal_subgroup_aux
