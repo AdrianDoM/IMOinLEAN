@@ -1,5 +1,4 @@
 import group_theory.subgroup
-import algebra.punit_instances
 
 namespace add_subgroup
 
@@ -172,21 +171,13 @@ def of_left_inverse {g : H → G} (h : function.left_inverse g f) : G ≃* f.ran
 noncomputable def of_injective (h : function.injective f) : G ≃* f.range :=
 of_left_inverse $ classical.some_spec h.has_left_inverse
 
-def of_subsingleton (h : subsingleton G) : G ≃* punit :=
-⟨λ _, punit.star, λ _, 1, λ x, subsingleton.elim _ _, λ x, subsingleton.elim _ _, λ _ _, rfl⟩
-
-end mul_equiv
-
--- TODO: Ask about has_add punit instance and fix.
-def add_equiv.of_subsingleton {G : Type*} [add_group G] (h : subsingleton G) : G ≃+ punit :=
-sorry
-
-attribute [to_additive] mul_equiv.of_subsingleton
-
-namespace mul_equiv
-variables {G H : Type*} [group G] [group H]
 @[to_additive]
-lemma foo (h : subsingleton G) : G ≃* punit := of_subsingleton h
+def of_subsingleton (hG : subsingleton G) (hH : subsingleton H) : G ≃* H :=
+{ to_fun := λ _, 1,
+  inv_fun := λ _, 1,
+  left_inv := λ x, @subsingleton.elim _ hG _ _,
+  right_inv := λ y, @subsingleton.elim _ hH _ _,
+  map_mul' := λ x y, (one_mul 1).symm }
 
 end mul_equiv
 

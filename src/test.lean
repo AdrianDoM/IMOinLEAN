@@ -1,15 +1,6 @@
-#check ℕ
-#check bool
-#check char
+import algebra.punit_instances
 
-constants (α : Type) (p : Prop)
-#check ∀ p : Prop, p → p
-#check ∀ α : Type, α → α
-#check p → p
-#check α → α
-#check list
+example : add_group punit := infer_instance
 
-universe u
-inductive vector (α : Type u) : ℕ → Type u
-| nil {} : vector 0
-| cons {n : ℕ} (a : α) (v : vector n) : vector (n+1)
+@[to_additive foo']
+def foo {G : Type*} [group G] : G ≃* punit := sorry

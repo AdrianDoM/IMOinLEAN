@@ -141,18 +141,14 @@ lemma factors_of_mul_equiv (e : G ≃* H) (σ : composition_series G) :
   (of_mul_equiv e σ).val.factors = σ.val.factors :=
 normal_series.factors_of_mul_equiv e σ.val
 
--- TODO: Fix punit has_add instance
 /-- Any composition series for the trivial group has no factors, i.e., it is a trivial series. -/
 @[to_additive]
 lemma factors_of_subsingleton (hG : subsingleton G) :
   Π (s : composition_series G), s.val.factors = 0
 | ⟨trivial _, _⟩ := rfl
-| ⟨cons H G f s, h⟩ := begin
-  exfalso, apply (h (quotient.mk' (1 : Group)) _).2 is_trivial_class_one,
-  rw [factors_cons, mem_cons], left, apply class_eq,
-  have : subsingleton (quotient f.φ.range) := @quotient.subsingleton _ hG _,
-  exact (mul_equiv.of_subsingleton this).symm,
-end
+| ⟨cons H G f s, h⟩ := by refine absurd hG (h (quotient.mk' G) _).2; 
+{ rw [factors_cons, mem_cons], left,
+  refine class_eq' (mul_equiv.of_subsingleton hG $ @quotient.subsingleton _ hG _) }
 
 /-- The unique composition series for a simple group. -/
 @[to_additive]
