@@ -7,7 +7,7 @@ open subgroup
 
 @[to_additive is_simple_add]
 def is_simple (G : Type*) [group G] : Prop :=
-  ∀ (N : subgroup G), N.normal → N = ⊥ ∨ N = ⊤
+∀ (N : subgroup G), N.normal → N = ⊥ ∨ N = ⊤
 
 variables {G H : Type*} [group G] [group H]
 

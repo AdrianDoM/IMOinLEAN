@@ -205,27 +205,25 @@ lemma card_lt_of_cons {σ : composition_series G} {f : normal_embedding H G} {s 
 λ h, @fintype.of_equiv_card _ _ f.fintype f.equiv_range.to_equiv ▸
   by convert card_lt (maximal_normal_subgroup_of_cons h).2.1
 
+open fintype
+
 variable (G)
 /-- Jordan-Hölder 1. Every finite group has a composition series. -/
 @[to_additive]
 noncomputable lemma exists_composition_series_of_finite :
   composition_series G :=
-suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G),
-  @fintype.card G hG = n → composition_series G,
-  from h (fintype.card G) G hG rfl,
-λ N, N.strong_rec_on $ begin
-  intros n ih H, introI hH, intro hn,
-  by_cases h1 : subsingleton H,
-  { existsi trivial h1, intro, simp },
-  by_cases h2 : is_simple H,
+strong_rec_on_card' G begin
+  clear hG G, intro G, introI, intro ih,
+  by_cases h1 : subsingleton G,
+  { use trivial h1, intro, simp },
+  by_cases h2 : is_simple G,
   { exact of_simple h2 h1 },
   apply classical.subtype_of_exists,
   rcases exists_maximal_normal_subgroup h1 with ⟨N, hN⟩,
   haveI := hN.1, -- Add N.normal to instance cache
-  have σ : composition_series (Group.of N) := ih (fintype.card N) (hn ▸ card_lt hN.2.1) _ _ _,
-  swap, { rw Group.coe_of, apply_instance }, swap, { simp only [Group.coe_of] },
+  have σ : composition_series (Group.of N) := ih (Group.of N) (card_lt hN.2.1),
   rw maximal_normal_subgroup_iff at hN,
-  existsi cons (Group.of N) H (of_normal_subgroup N) σ.val,
+  use cons (Group.of N) G (of_normal_subgroup N) σ.val,
   intros G' hG', simp at hG',
   cases hG', swap, { exact σ.prop G' hG' },
   haveI : N.subtype.range.normal := (of_normal_subgroup N).norm,
@@ -236,13 +234,10 @@ end
 variable {G}
 /-- Jordan-Hölder 2. Any two composition series for `G` have the same factors. -/
 @[to_additive]
-theorem eq_factors (σ τ : composition_series G) :
+theorem eq_factors : Π (σ τ : composition_series G),
   σ.val.factors = τ.val.factors :=
-suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G) (σ τ : composition_series G),
-  @fintype.card G hG = n → σ.val.factors = τ.val.factors,
-  from h (fintype.card G) G hG σ τ rfl,
-λ n, n.strong_induction_on $ begin
-  clear σ τ hG G n, intros n ih G, introI hG, intros σ τ hn,
+strong_rec_on_card' G begin
+  clear hG G, intros G, introI, intro ih, intros σ τ,
   by_cases hG' : subsingleton G, { simp only [factors_of_subsingleton hG'] },
   rcases exists_cons_of_not_subsingleton hG' σ.val with ⟨H, f, s, hs⟩,
   rcases exists_cons_of_not_subsingleton hG' τ.val with ⟨K, g, t, ht⟩,
@@ -251,8 +246,8 @@ suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G) (σ τ : composition_ser
   { congr' 1, { exact class_eq (equiv_quotient_of_eq h) },
     have : H ≃* K := f.equiv_range.trans ((mul_equiv.subgroup_congr h).trans g.equiv_range.symm),
     rw [←factors_of_cons hs, ←factors_of_cons ht, ←factors_of_mul_equiv this.symm],
-    apply ih (@fintype.card H f.fintype) _ H f.fintype _ _ rfl,
-    rw ←hn, exact card_lt_of_cons hs },
+    apply @ih H f.fintype,
+    exact card_lt_of_cons hs },
   have htop := sup_maximal_normal_subgroup (maximal_normal_subgroup_of_cons hs)
     (maximal_normal_subgroup_of_cons ht) h,
   have ρ := exists_composition_series_of_finite (Group.of ↥(f.φ.range ⊓ g.φ.range)),
@@ -264,8 +259,8 @@ suffices h : ∀ (n : ℕ) (G : Group) (hG : fintype G) (σ τ : composition_ser
   let t' : composition_series K := cons' ρ (from_inf_range_right f g) 
     ⟨(mul_equiv_is_simple_iff $ quotient_from_inf_range_right f g htop).mpr this.1,
     λ h, this.2 $ (quotient_from_inf_range_right f g htop).to_equiv.subsingleton_iff.mp h⟩,
-  have hs' := ih (@fintype.card H f.fintype) (hn ▸ card_lt_of_cons hs) H f.fintype s' (of_cons hs) rfl,
-  have ht' := ih (@fintype.card K g.fintype) (hn ▸ card_lt_of_cons ht) K g.fintype t' (of_cons ht) rfl,
+  have hs' := @ih H f.fintype (card_lt_of_cons hs) s' (of_cons hs),
+  have ht' := @ih K g.fintype (card_lt_of_cons ht) t' (of_cons ht),
   rw [factors_of_cons hs, factors_of_cons'] at hs', rw ←hs',
   rw [factors_of_cons ht, factors_of_cons'] at ht', rw ←ht',
   conv_rhs { rw multiset.cons_swap }, congr' 1,

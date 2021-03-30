@@ -49,12 +49,12 @@ namespace fintype
 
 variables {α β : Type*} [fintype α] [fintype β]
 
-lemma card_ge_of_surjective (f : α → β) (hf : function.surjective f) : card α ≥ card β :=
+lemma card_ge_of_surjective {f : α → β} (hf : function.surjective f) : card α ≥ card β :=
 card_le_of_injective (function.surj_inv hf) (function.injective_surj_inv hf)
 
-lemma card_quotient_le (s : setoid α) [decidable_rel s.r] :
+lemma card_quotient_le {s : setoid α} [decidable_rel s.r] :
   fintype.card (quotient s) ≤ fintype.card α :=
-card_ge_of_surjective quotient.mk $ surjective_quotient_mk _
+card_ge_of_surjective (surjective_quotient_mk _)
 
 end fintype
 
@@ -69,7 +69,7 @@ variables {N : add_subgroup G} [add_subgroup.normal N]
 /- TODO: add to_additive's in order_of_element.lean file. -/
 lemma eq_bot_of_card_quotient_eq : fintype.card (quotient N) = fintype.card G → N = ⊥ :=
 begin
-  intro h, rw card_eq_card_quotient_mul_card_subgroup N at h, -- FIXME:
+  intro h, rw card_eq_card_quotient_mul_card_subgroup N at h,
   conv_lhs at h { rw ←nat.mul_one (fintype.card (quotient N)) },
   apply subgroup.eq_bot_of_card_eq_one,
   apply nat.eq_of_mul_eq_mul_left subgroup.card_pos h.symm,
@@ -107,16 +107,35 @@ namespace fingroup
 open fintype
 
 @[to_additive add_fingroup.strong_rec_on_card]
-def strong_rec_on_card (G : Type*) (hGg : group G) (hGf : fintype G) 
-  {p : Π (G : Type*), group G → fintype G → Sort _} :
-  (Π (G : Type*) (hGg : group G) (hGf : fintype G),
-    (Π (H : Type*) (hHg : group H) (hHf : fintype H), @card H hHf < @card G hGf → p H hHg hHf) →
-    p G hGg hGf) → p G hGg hGf :=
-λ ih, suffices h : ∀ (n : ℕ) (G : Type*) (hGg : group G) (hGf : fintype G),
-  @card G hGf = n → p G hGg hGf,
-  from h (@card G hGf) G hGg hGf rfl,
-λ n, n.strong_rec_on $ λ n ih' H hHg hHf hn, ih H hHg hHf $
-  λ K hKg hKf hK, ih' (@card K hKf) (hn ▸ hK) K hKg hKf rfl
+def strong_rec_on_card (G : Type*) [group G] [fintype G] 
+  {p : Π (G : Type*) [group G] [fintype G], Sort _} :
+  (Π (G : Type*) [group G] [fintype G],
+    (Π (H : Type*) [group H] [fintype H], by exactI card H < card G → p H) →
+    by exactI p G) →
+  p G :=
+λ ih, suffices h : ∀ (n : ℕ) (G : Type*) [group G] [fintype G], by exactI card G = n → p G,
+  from h (card G) G rfl,
+λ n, n.strong_rec_on $ begin
+  intros n ih' G, introsI _ _, intro hn,
+  apply ih G,
+  intro H, introsI _ _, intro hH,
+  exact ih' (card H) (hn ▸ hH) H rfl,
+end
+
+@[to_additive add_fingroup.strong_rec_on_card']
+def strong_rec_on_card' (G : Group) [fintype G]
+  {p : Π (G : Group) [fintype G], Sort _} :
+  (Π (G : Group) [fintype G],
+    (Π (H : Group) [fintype H], by exactI card H < card G → p H) →
+    by exactI p G) →
+  p G :=
+λ ih, suffices h : ∀ (n : ℕ) (G : Group) [fintype G], by exactI card G = n → p G,
+  from h (card G) G rfl,
+λ n, n.strong_rec_on $ begin
+  intros n ih' G, introI, intro hn,
+  apply ih G, intro H, introI, intro hH,
+  exact ih' (card H) (hn ▸ hH) H rfl,
+end
   
 end fingroup
 
@@ -161,16 +180,15 @@ lemma is_simple_of_prime_card [fintype G] : nat.prime (fintype.card G) → is_si
 end
 
 @[to_additive]
-lemma exists_maximal_normal_subgroup_aux
-  (G : Type*) (hGg : group G) (hGf : fintype G) :
+lemma exists_maximal_normal_subgroup [fintype G] :
   ¬ subsingleton G → ∃ (N : subgroup G), maximal_normal_subgroup N :=
-fingroup.strong_rec_on_card G hGg hGf begin
-  intros G, introsI hGg hGf, intros ih hG,
+fingroup.strong_rec_on_card G begin
+  intros G, introsI _ _, intros ih hG,
   by_cases h : is_simple G,
   { use [⊥, subgroup.bot_normal, λ h, hG (subsingleton_iff.mpr $ subsingleton_of_bot_eq_top h)],
     intros N hN _, exact h N hN },
   rcases not_is_simple.mp h with ⟨N, hN, hN'⟩, haveI := hN,
-  rcases ih (quotient N) infer_instance infer_instance _ 
+  rcases ih (quotient N) _ 
     (λ h, hN'.2 $ subsingleton_quotient_iff.mp h) with ⟨K, hK, hKtop, hKmax⟩,
   swap, { apply card_quotient_lt hN'.1 },
   use [comap (mk' N) K, normal.comap hK _], split,
@@ -183,11 +201,6 @@ fingroup.strong_rec_on_card G hGg hGf begin
   { left, exact le_antisymm ((gc_map_comap (mk' N)).le_u $ le_of_eq h_1) hLK },
   right, exact (map_mk'_eq_top hNL).mp h_1,
 end
-
-@[to_additive]
-lemma exists_maximal_normal_subgroup [fintype G] (h : ¬ subsingleton G) :
-  ∃ (N : subgroup G), maximal_normal_subgroup N :=
-exists_maximal_normal_subgroup_aux G infer_instance infer_instance h
 
 @[to_additive]
 lemma maximal_normal_subgroup_iff (N : subgroup G) [N.normal] :
