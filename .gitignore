@@ -2,3 +2,4 @@
 /_target
 /leanpkg.path
 /src/jordan-holder/format.lean
+/src/test.lean
