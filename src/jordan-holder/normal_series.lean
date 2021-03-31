@@ -159,7 +159,9 @@ def of_simple (h1 : is_simple G) (h2 : ¬ subsingleton G) :
   simp only [factors, multiset.mem_singleton] at hH,
   have : quotient (from_subsingleton punit.subsingleton ↥G).φ.range ≃* G :=
     mul_equiv.trans (equiv_quotient_of_eq from_subsingleton_range) quotient_bot,
-  rw class_eq this at hH, simp [hH], use [h1, h2],
+  rw class_eq this at hH,
+  simp only [hH, quotient.lift_on'_mk', is_simple_class, is_simple_coe_Group,
+    is_trivial_class_mk', Group.coe_of], use [h1, h2],
 end⟩
 
 /-- Any composition series of a simple group `G` has `⟦G⟧` as its only composition factor. -/
@@ -185,6 +187,16 @@ lemma factors_of_simple (h1 : is_simple G) (h2 : ¬ subsingleton G) :
   exfalso, apply h'.2, simp [h1, subsingleton_quotient_iff],
 end
 
+@[to_additive]
+def cons_of_maximal_normal_subgroup {N : subgroup G} (h : N.maximal_normal_subgroup)
+  (σ : composition_series (Group.of N)) : composition_series G :=
+begin
+  haveI := h.1, apply cons' σ (of_normal_subgroup N),
+  have h' := (maximal_normal_subgroup_iff N).mp h, split,
+  { rw mul_equiv_is_simple_iff (equiv_quotient_of_eq $ range_of_normal_subgroup N), exact h'.1 },
+  { rw range_of_normal_subgroup, exact h'.2 }
+end
+
 /-- The range of a normal embedding used in a composition series is a maximal normal subgroup. -/
 @[to_additive]
 lemma maximal_normal_subgroup_of_cons {σ : composition_series G}
@@ -208,31 +220,21 @@ lemma card_lt_of_cons {σ : composition_series G} {f : normal_embedding H G} {s 
 open fintype
 
 variable (G)
-/-- Jordan-Hölder 1. Every finite group has a composition series. -/
+/-- Every finite group has a composition series. -/
 @[to_additive]
-noncomputable lemma exists_composition_series_of_finite :
-  composition_series G :=
+lemma exists_composition_series_of_finite :
+  nonempty (composition_series G) :=
 strong_rec_on_card' G begin
   clear hG G, intro G, introI, intro ih,
   by_cases h1 : subsingleton G,
-  { use trivial h1, intro, simp },
-  by_cases h2 : is_simple G,
-  { exact of_simple h2 h1 },
-  apply classical.subtype_of_exists,
-  rcases exists_maximal_normal_subgroup h1 with ⟨N, hN⟩,
-  haveI := hN.1, -- Add N.normal to instance cache
-  have σ : composition_series (Group.of N) := ih (Group.of N) (card_lt hN.2.1),
-  rw maximal_normal_subgroup_iff at hN,
-  use cons (Group.of N) G (of_normal_subgroup N) σ.val,
-  intros G' hG', simp at hG',
-  cases hG', swap, { exact σ.prop G' hG' },
-  haveI : N.subtype.range.normal := (of_normal_subgroup N).norm,
-  rw class_eq (equiv_quotient_of_eq (range_subtype N)) at hG',
-  simp [hG'], exact hN,
+  { use of_subsingleton h1 },
+  rcases exists_maximal_normal_subgroup h1 with ⟨N, hN⟩, haveI := hN.1,
+  apply (ih (Group.of N) (card_lt hN.2.1)).elim,
+  intro σ, use cons_of_maximal_normal_subgroup hN σ,
 end
 
 variable {G}
-/-- Jordan-Hölder 2. Any two composition series for `G` have the same factors. -/
+/-- Jordan-Hölder: Any two composition series for `G` have the same factors. -/
 @[to_additive]
 theorem eq_factors : Π (σ τ : composition_series G),
   σ.val.factors = τ.val.factors :=
@@ -250,7 +252,7 @@ strong_rec_on_card' G begin
     exact card_lt_of_cons hs },
   have htop := sup_maximal_normal_subgroup (maximal_normal_subgroup_of_cons hs)
     (maximal_normal_subgroup_of_cons ht) h,
-  have ρ := exists_composition_series_of_finite (Group.of ↥(f.φ.range ⊓ g.φ.range)),
+  apply (exists_composition_series_of_finite (Group.of ↥(f.φ.range ⊓ g.φ.range))).elim, intro ρ,
   have := (maximal_normal_subgroup_iff _).mp (maximal_normal_subgroup_of_cons ht),
   let s' : composition_series H := cons' ρ (from_inf_range_left f g)
     ⟨(mul_equiv_is_simple_iff $ quotient_from_inf_range_left f g htop).mpr this.1,

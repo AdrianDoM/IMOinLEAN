@@ -59,9 +59,14 @@ open quotient_group
 instance group_quotient (f : normal_embedding G H) : group (quotient f.φ.range) :=
 by haveI := f.norm; apply_instance
 
-@[simp, to_additive]
+@[to_additive]
 def of_normal_subgroup (N : subgroup G) [N.normal] : normal_embedding N G :=
 ⟨N.subtype, λ x y hx, by simpa using hx, (range_subtype N).symm ▸ infer_instance⟩
+
+@[simp, to_additive]
+lemma range_of_normal_subgroup (N : subgroup G) [N.normal] :
+  (of_normal_subgroup N).φ.range = N :=
+by simp only [of_normal_subgroup, range_subtype]
 
 @[to_additive]
 def of_normal_subgroup_to_subgroup {K N : subgroup G} [N.normal] (h : N ≤ K) :

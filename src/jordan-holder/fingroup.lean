@@ -183,10 +183,10 @@ end
 lemma exists_maximal_normal_subgroup [fintype G] :
   ¬ subsingleton G → ∃ (N : subgroup G), maximal_normal_subgroup N :=
 fingroup.strong_rec_on_card G begin
-  intros G, introsI _ _, intros ih hG,
+  clear _inst_1 _inst_2 G, intro G, introsI _ _, intros ih hG,
   by_cases h : is_simple G,
-  { use [⊥, subgroup.bot_normal, λ h, hG (subsingleton_iff.mpr $ subsingleton_of_bot_eq_top h)],
-    intros N hN _, exact h N hN },
+  { use [⊥, subgroup.bot_normal, λ h, hG (subsingleton_iff.mpr $ subsingleton_of_bot_eq_top h),
+      λ N hN _, h N hN] },
   rcases not_is_simple.mp h with ⟨N, hN, hN'⟩, haveI := hN,
   rcases ih (quotient N) (card_quotient_lt hN'.1)
     (λ h, hN'.2 $ subsingleton_quotient_iff.mp h) with ⟨K, hK, hKtop, hKmax⟩,
