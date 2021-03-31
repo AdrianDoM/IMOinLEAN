@@ -54,6 +54,14 @@ instance inf_normal (N K : subgroup G) [hN : N.normal] [hK : K.normal] : normal 
 open monoid_hom
 
 @[to_additive]
+lemma comap_mono {f : G →* H} {K K' : subgroup H} : K ≤ K' → comap f K ≤ comap f K' :=
+set.preimage_mono
+
+@[to_additive]
+lemma map_mono {f : G →* H} {K K' : subgroup G} : K ≤ K' → map f K ≤ map f K' :=
+set.image_subset _
+
+@[to_additive]
 lemma range_comp (f : G →* H) (g : H →* K) : (g.comp f).range = map g f.range :=
 ext' $ set.range_comp g f
 
@@ -68,6 +76,19 @@ ext' $ by rw [coe_map, coe_comap, set.image_eq_preimage_of_inverse hl hr]
 lemma map_comap_eq (hf : function.surjective f) (K : subgroup H) :
   map f (comap f K) = K :=
 ext' $ by rw [coe_map, coe_comap, set.image_preimage_eq ↑K hf]
+
+@[to_additive]
+lemma comap_map_eq (hf : function.injective f) (K : subgroup G) :
+  comap f (map f K) = K :=
+ext' $ by rw [coe_comap, coe_map, set.preimage_image_eq ↑K hf]
+
+@[to_additive]
+lemma comap_injective (h : function.surjective f) : function.injective (comap f) :=
+λ K L hKL, by { apply_fun map f at hKL, simpa [map_comap_eq h] using hKL }
+
+@[to_additive]
+lemma map_injective (h : function.injective f) : function.injective (map f) :=
+λ K L hKL, by { apply_fun comap f at hKL, simpa [comap_map_eq h] using hKL }
 
 @[to_additive]
 lemma ker_le_comap {K : subgroup H} : f.ker ≤ comap f K :=

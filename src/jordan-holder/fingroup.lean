@@ -188,18 +188,16 @@ fingroup.strong_rec_on_card G begin
   { use [⊥, subgroup.bot_normal, λ h, hG (subsingleton_iff.mpr $ subsingleton_of_bot_eq_top h)],
     intros N hN _, exact h N hN },
   rcases not_is_simple.mp h with ⟨N, hN, hN'⟩, haveI := hN,
-  rcases ih (quotient N) _ 
+  rcases ih (quotient N) (card_quotient_lt hN'.1)
     (λ h, hN'.2 $ subsingleton_quotient_iff.mp h) with ⟨K, hK, hKtop, hKmax⟩,
-  swap, { apply card_quotient_lt hN'.1 },
-  use [comap (mk' N) K, normal.comap hK _], split,
-  { intro h, apply hKtop, rw ←comap_top (mk' N) at h, apply_fun map (mk' N) at h,
-    rw [map_comap_eq (mk'_surjective N), map_comap_eq (mk'_surjective N)] at h, exact h },
+  use [comap (mk' N) K, hK.comap _,
+    comap_top (mk' N) ▸ (comap_injective (mk'_surjective N)).ne hKtop],
   intro L, introI hL, intro hLK,
-  have hLK' := (gc_map_comap (mk' N)).monotone_l hLK, rw map_comap_eq (mk'_surjective N) at hLK',
+  have hLK' := map_mono hLK, rw map_comap_eq (mk'_surjective N) at hLK',
   have hNL : N ≤ L := le_trans le_comap_mk' hLK,
-  cases @hKmax (map (mk' N) L) (map_mk'_normal hNL) hLK',
-  { left, exact le_antisymm ((gc_map_comap (mk' N)).le_u $ le_of_eq h_1) hLK },
-  right, exact (map_mk'_eq_top hNL).mp h_1,
+  exact (@hKmax (map (mk' N) L) (map_mk'_normal hNL) hLK').imp
+    (λ h, le_antisymm ((gc_map_comap (mk' N)).le_u $ le_of_eq h) hLK)
+    (λ h, (map_mk'_eq_top hNL).mp h),
 end
 
 @[to_additive]
