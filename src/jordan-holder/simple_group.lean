@@ -1,4 +1,4 @@
-import group_theory.subgroup
+import group_theory.quotient_group
 import category_theory.isomorphism_classes
 import algebra.category.Group
 import .subgroup
@@ -38,3 +38,8 @@ open category_theory
 def is_simple_class (C : isomorphism_classes.obj (Cat.of Group)) : Prop :=
 quotient.lift_on' C (λ (G : Group), is_simple G)
   (λ G H ⟨h⟩, eq_iff_iff.mpr $ mul_equiv_is_simple_iff (iso.Group_iso_to_mul_equiv h))
+
+@[to_additive is_simple_add_quotient_eq]
+def is_simple_quotient_eq {N M : subgroup G} [N.normal] [M.normal] (h : N = M) :
+  is_simple (quotient_group.quotient N) = is_simple (quotient_group.quotient M) :=
+by unfreezingI { subst h }

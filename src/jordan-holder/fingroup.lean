@@ -200,25 +200,25 @@ fingroup.strong_rec_on_card G begin
     (λ h, (map_mk'_eq_top hNL).mp h),
 end
 
+open quotient_group
+
 @[to_additive]
 lemma maximal_normal_subgroup_iff (N : subgroup G) [N.normal] :
   maximal_normal_subgroup N ↔
-  is_simple (quotient_group.quotient N) ∧ ¬ subsingleton (quotient_group.quotient N) :=
+  is_simple (quotient N) ∧ ¬ subsingleton (quotient N) :=
 ⟨λ hN, ⟨begin
-  intro K, introI hK,
-  have : N ≤ comap (mk' N) K, { convert ker_le_comap, rw ker_mk },
-  cases hN.2.2 (comap (mk' N) K) this,
-  { left, rw [←map_comap_eq (mk'_surjective N) K, ←map_comap_eq (mk'_surjective N) ⊥, h],
-    change _ = map _ (mk' N).ker, rw ker_mk },
-  right, rw [←map_comap_eq (mk'_surjective N) K, ←map_comap_eq (mk'_surjective N) ⊤, h, comap_top],
+  intro K, introI,
+  have : N ≤ comap (mk' N) K, { simp only [←ker_mk N], exact ker_le_comap },
+  refine (hN.2.2 (comap (mk' N) K) this).imp (λ h, _) (λ h, _),
+  { conv_rhs at h { rw [←ker_mk N] }, exact comap_injective (mk'_surjective N) h },
+  { rw [←comap_top (mk' N)] at h, exact comap_injective (mk'_surjective N) h },
 end,
   λ h, hN.2.1 (subsingleton_quotient_iff.mp h)⟩,
-λ ⟨h1, h2⟩, ⟨infer_instance, λ h, h2 (subsingleton_quotient_iff.mpr h),
-  begin
-    intro K, introI hK, intro hNK,
-    cases h1 _ (map_mk'_normal hNK),
-    { left, apply le_antisymm _ hNK, rw ←ker_mk N, exact le_ker_iff_map.mpr h },
-    right, apply (map_mk'_eq_top hNK).mp h,
-  end⟩⟩
+λ ⟨h1, h2⟩, ⟨infer_instance, λ h, h2 (subsingleton_quotient_iff.mpr h), begin
+    intro K, introI, intro hNK,
+    refine (h1 _ (map_mk'_normal hNK)).imp (λ h, _) (λ h, _),
+    { exact le_antisymm (ker_mk N ▸ le_ker_iff_map.mpr h)  hNK },
+    { exact (map_mk'_eq_top hNK).mp h },
+end⟩⟩
 
 end subgroup

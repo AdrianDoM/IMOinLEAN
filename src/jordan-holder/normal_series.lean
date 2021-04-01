@@ -193,7 +193,7 @@ def cons_of_maximal_normal_subgroup {N : subgroup G} (h : N.maximal_normal_subgr
 begin
   haveI := h.1, apply cons' σ (of_normal_subgroup N),
   have h' := (maximal_normal_subgroup_iff N).mp h, split,
-  { rw mul_equiv_is_simple_iff (equiv_quotient_of_eq $ range_of_normal_subgroup N), exact h'.1 },
+  { rw is_simple_quotient_eq (range_of_normal_subgroup N), exact h'.1 },
   { rw range_of_normal_subgroup, exact h'.2 }
 end
 
@@ -222,13 +222,13 @@ open fintype
 variable (G)
 /-- Every finite group has a composition series. -/
 @[to_additive]
-lemma exists_composition_series_of_finite :
+theorem exists_composition_series_of_finite :
   nonempty (composition_series G) :=
 strong_rec_on_card' G begin
   clear hG G, intro G, introI, intro ih,
-  by_cases h1 : subsingleton G,
-  { use of_subsingleton h1 },
-  rcases exists_maximal_normal_subgroup h1 with ⟨N, hN⟩, haveI := hN.1,
+  by_cases h : subsingleton G,
+  { use of_subsingleton h },
+  rcases exists_maximal_normal_subgroup h with ⟨N, hN⟩, haveI := hN.1,
   apply (ih (Group.of N) (card_lt hN.2.1)).elim,
   intro σ, use cons_of_maximal_normal_subgroup hN σ,
 end
