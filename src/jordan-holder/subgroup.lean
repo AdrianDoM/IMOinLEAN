@@ -22,7 +22,7 @@ lemma coe_inj {H : subgroup G} (x y : H) : (x : G) = y ↔ x = y := set_coe.ext_
 
 @[simp, to_additive]
 lemma range_subtype (H : subgroup G) : H.subtype.range = H :=
-ext' $ H.subtype.coe_range.trans subtype.range_coe
+set_like.ext' $ H.subtype.coe_range.trans subtype.range_coe
 
 variable (G)
 @[to_additive]
@@ -63,24 +63,24 @@ set.image_subset _
 
 @[to_additive]
 lemma range_comp (f : G →* H) (g : H →* K) : (g.comp f).range = map g f.range :=
-ext' $ set.range_comp g f
+set_like.ext' $ set.range_comp g f
 
 variables {f : G →* H} {g : H →* K}
 
 @[to_additive]
 lemma map_eq_comap_of_inverse {g : H →* G} (hl : function.left_inverse g f)
   (hr : function.right_inverse g f) (K : subgroup G) : map f K = comap g K :=
-ext' $ by rw [coe_map, coe_comap, set.image_eq_preimage_of_inverse hl hr]
+set_like.ext' $ by rw [coe_map, coe_comap, set.image_eq_preimage_of_inverse hl hr]
 
 @[to_additive]
 lemma map_comap_eq (hf : function.surjective f) (K : subgroup H) :
   map f (comap f K) = K :=
-ext' $ by rw [coe_map, coe_comap, set.image_preimage_eq ↑K hf]
+set_like.ext' $ by rw [coe_map, coe_comap, set.image_preimage_eq ↑K hf]
 
 @[to_additive]
 lemma comap_map_eq (hf : function.injective f) (K : subgroup G) :
   comap f (map f K) = K :=
-ext' $ by rw [coe_comap, coe_map, set.preimage_image_eq ↑K hf]
+set_like.ext' $ by rw [coe_comap, coe_map, set.preimage_image_eq ↑K hf]
 
 @[to_additive]
 lemma comap_injective (h : function.surjective f) : function.injective (comap f) :=

@@ -27,34 +27,31 @@ end nat
 
 open list add_normal_embedding add_normal_series add_composition_series zmod nat
 
-def normal_embedding_to_mul (m n : ℕ) (h : 0 < n * m) :
-  add_normal_embedding (zmod m) (zmod $ n * m) :=
-have hm : 0 < m := nat.pos_right_of_mul_pos h,
-have hn : n ≠ 0 := ne_of_gt $ nat.pos_left_of_mul_pos h,
-{ to_fun := λ x, ↑(x.val * n),
+def normal_embedding_to_mul (l : list ℕ) (m : ℕ) (h : 0 < m * l.prod) :
+  add_normal_embedding (zmod l.prod) (zmod (m :: l).prod) :=
+have hl : 0 < l.prod := nat.pos_right_of_mul_pos h,
+have hm : m ≠ 0 := ne_of_gt $ nat.pos_left_of_mul_pos h,
+{ to_fun := λ x, ↑(x.val * m),
   map_zero' := by simp,
   map_add' := λ x y, begin
-    rw [←nat.cast_add, ←add_mul, zmod.eq_iff_modeq_nat, mul_comm n],
-    apply modeq.modeq_mul_right' n,
-    rw [←zmod.eq_iff_modeq_nat, @zmod.val_add _ hm, zmod.nat_cast_mod],
+    rw [←nat.cast_add, ←add_mul, zmod.eq_iff_modeq_nat, prod_cons, mul_comm m],
+    apply modeq.modeq_mul_right' m,
+    rw [←zmod.eq_iff_modeq_nat, @zmod.val_add _ ⟨hl⟩, zmod.nat_cast_mod],
   end,
   inj := λ x y h1, begin
-    rw [add_monoid_hom.coe_mk, eq_iff_modeq_nat, mul_comm n,
-      modeq.modeq_mul_right'_iff hn, ←eq_iff_modeq_nat] at h1,
-    simpa [@nat_cast_val _ _ _ hm] using h1,
+    rw [add_monoid_hom.coe_mk, eq_iff_modeq_nat, prod_cons, mul_comm m,
+      modeq.modeq_mul_right'_iff hm, ←eq_iff_modeq_nat] at h1,
+    simpa [@nat_cast_val _ _ _ ⟨hl⟩] using h1,
   end,
-  norm := infer_instance } 
+  norm := infer_instance }
 
 def normal_series_of_factors : Π {l : list ℕ} (hl : 0 < l.prod),
   add_normal_series (AddGroup.of $ zmod l.prod)
 | [] _ := add_normal_series.trivial (by { simp, apply_instance })
-| (m::l) hl := begin 
-  apply add_normal_series.cons (AddGroup.of $ zmod l.prod) (AddGroup.of $ zmod (m::l).prod),
-  { change add_normal_embedding (zmod l.prod) (zmod (m::l).prod),
-    rw prod_cons at hl,
-    convert normal_embedding_to_mul l.prod m hl; rw prod_cons },
-  exact normal_series_of_factors (prod_pos_of_cons hl),
-end
+| (m::l) hl := add_normal_series.cons
+  (AddGroup.of (zmod l.prod)) (AddGroup.of (zmod (m::l).prod))
+  (normal_embedding_to_mul l m (by simpa using hl))
+  (normal_series_of_factors (pos_right_of_mul_pos (by simpa using hl)))
 
 local attribute [instance] classical.prop_decidable
 
@@ -64,7 +61,7 @@ lemma finite_factors : Π {l : list ℕ} (hl : l.prod > 0),
 | (m::l) hl := λ G hG, begin
   simp [normal_series_of_factors] at hG, rcases hG with rfl | hG,
   { apply is_finite_add_class_mk', change fintype (quotient_add_group.quotient _),
-    apply @quotient.fintype _ (@zmod.fintype _ hl) },
+    apply @quotient.fintype _ (@zmod.fintype _ ⟨hl⟩) },
   exact finite_factors (prod_pos_of_cons hl) _ hG,
 end
 
@@ -73,12 +70,17 @@ lemma card_factors_of_normal_series_of_factors : Π {l : list ℕ} (hl : 0 < l.p
   = quotient.mk' l
 | [] _ := by { simp [normal_series_of_factors], refl }
 | (m::l) hl := show _ = m ::ₘ quotient.mk' l, begin
+  haveI : fact (0 < (m::l).prod) := ⟨hl⟩,
   simp [normal_series_of_factors, multiset.cons_eq_cons], left, split, swap,
   { exact card_factors_of_normal_series_of_factors (prod_pos_of_cons hl) },
-  rw add_class_card_mk' _, swap,
-  { change fintype (quotient_add_group.quotient _),
-    apply @quotient.fintype _ (@zmod.fintype _ hl) },
-  simp only [AddGroup.coe_of], sorry,
+  rw add_class_card_mk', simp only [AddGroup.coe_of], rw prod_cons at hl,
+  have h := card_eq_card_quotient_mul_card_add_subgroup (normal_embedding_to_mul l m hl).φ.range,
+  swap, { apply_instance }, rw zmod.card at h,
+  suffices : fintype.card ↥((normal_embedding_to_mul l m hl).φ.range) = l.prod,
+  { simp only [this, prod_cons, mul_eq_mul_right_iff] at h,
+    cases h, { exact h.symm }, exact absurd h (ne_of_gt $ pos_right_of_mul_pos hl) },
+  haveI : fact (0 < l.prod) := ⟨pos_right_of_mul_pos hl⟩,
+  rw [←fintype.card_congr (normal_embedding_to_mul l m hl).equiv_range.to_equiv, zmod.card],
 end
 
 lemma card_factors {l : list ℕ} (hl : 0 < l.prod)
@@ -107,8 +109,8 @@ have ht' : 0 < t.prod := nat.pos_of_ne_zero $ prod_ne_zero (λ h0, nat.not_prime
   let τ := composition_series_of_prime_factors ht,
   conv in (normal_series_of_factors hs') { change σ.val },
   conv in (normal_series_of_factors ht') { change τ.val },
-  haveI : fact (0 < s.prod) := hs',
-  haveI : fact (0 < t.prod) := ht',
+  haveI : fact (0 < s.prod) := ⟨hs'⟩,
+  haveI : fact (0 < t.prod) := ⟨ht'⟩,
   have iso : (AddGroup.of (zmod t.prod)) ≃+ (AddGroup.of (zmod s.prod)) := by rw h,
   congr' 1, rw [←add_composition_series.factors_of_add_equiv iso τ, eq_factors],
 end

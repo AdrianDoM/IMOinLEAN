@@ -1,5 +1,3 @@
-import category_theory.isomorphism_classes
-import group_theory.quotient_group
 import .subgroup .normal_embedding .simple_group .trivial_class .quotient_group .fingroup
 
 universe u
@@ -248,8 +246,7 @@ strong_rec_on_card' G begin
   { congr' 1, { exact class_eq (equiv_quotient_of_eq h) },
     have : H ≃* K := f.equiv_range.trans ((mul_equiv.subgroup_congr h).trans g.equiv_range.symm),
     rw [←factors_of_cons hs, ←factors_of_cons ht, ←factors_of_mul_equiv this.symm],
-    apply @ih H f.fintype,
-    exact card_lt_of_cons hs },
+    apply @ih H f.fintype (card_lt_of_cons hs) },
   have htop := sup_maximal_normal_subgroup (maximal_normal_subgroup_of_cons hs)
     (maximal_normal_subgroup_of_cons ht) h,
   apply (exists_composition_series_of_finite (Group.of ↥(f.φ.range ⊓ g.φ.range))).elim, intro ρ,

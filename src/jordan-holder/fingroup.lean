@@ -9,7 +9,7 @@ variables {G : Type*} [group G] [fintype G]
 @[to_additive]
 lemma card_pos : fintype.card G > 0 := fintype.card_pos_iff.mpr ⟨1⟩
 
-variables {H : subgroup G} [decidable_pred H.carrier]
+variables {H : subgroup G} [decidable_pred (λ h, h ∈ H)]
 
 @[to_additive]
 lemma card_lt : H ≠ ⊤ → fintype.card H < fintype.card G :=
@@ -29,10 +29,10 @@ end subgroup
 namespace add_subgroup
 
 variables {G : Type*} [add_group G] [fintype G]
-variables {H : add_subgroup G} [decidable_pred H.carrier]
+variables {H : add_subgroup G} [decidable_pred (λ h, h ∈ H)]
 
 /- The to_additive attribute doesn't work in this case because it also changes the 1
-in the conclusion to a 0-/
+in the conclusion to a 0 -/
 lemma eq_bot_of_card_eq_one : fintype.card H = 1 → H = ⊥ :=
 λ h, le_antisymm (λ x hx, begin
   rcases fintype.card_eq_one_iff.mp h with ⟨y, hy⟩, rw mem_bot,
@@ -43,20 +43,26 @@ end add_subgroup
 
 attribute [to_additive add_subgroup.eq_bot_of_card_eq_one] subgroup.eq_bot_of_card_eq_one
 
-namespace fintype
+section add_lagrange
 
-/- TODO: push these to mathlib. -/
+open add_subgroup
 
-variables {α β : Type*} [fintype α] [fintype β]
+variables {α : Type*} [add_group α] [fintype α]
 
-lemma card_ge_of_surjective {f : α → β} (hf : function.surjective f) : card α ≥ card β :=
-card_le_of_injective (function.surj_inv hf) (function.injective_surj_inv hf)
+lemma card_eq_card_quotient_mul_card_add_subgroup (s : add_subgroup α) [fintype s]
+  [decidable_pred (λ a, a ∈ s)] :
+  fintype.card α = fintype.card (quotient_add_group.quotient s) * fintype.card s :=
+by rw ← fintype.card_prod;
+  exact fintype.card_congr (add_subgroup.add_group_equiv_quotient_times_add_subgroup)
 
-lemma card_quotient_le {s : setoid α} [decidable_rel s.r] :
-  fintype.card (quotient s) ≤ fintype.card α :=
-card_ge_of_surjective (surjective_quotient_mk _)
+attribute [to_additive card_eq_card_quotient_mul_card_add_subgroup] card_eq_card_quotient_mul_card_subgroup
 
-end fintype
+lemma card_add_subgroup_dvd_card (s : add_subgroup α) [fintype s] :
+  fintype.card s ∣ fintype.card α :=
+by haveI := classical.prop_decidable; simp [card_eq_card_quotient_mul_card_add_subgroup s]
+attribute [to_additive] card_subgroup_dvd_card
+
+end add_lagrange
 
 namespace quotient_add_group
 
@@ -66,13 +72,12 @@ variables {G : Type*} [add_group G] [fintype G]
 variables {N : add_subgroup G} [add_subgroup.normal N]
   [decidable_pred (λ a, a ∈ N)] [decidable_pred N.carrier]
 
-/- TODO: add to_additive's in order_of_element.lean file. -/
 lemma eq_bot_of_card_quotient_eq : fintype.card (quotient N) = fintype.card G → N = ⊥ :=
 begin
-  intro h, rw card_eq_card_quotient_mul_card_subgroup N at h,
+  intro h, rw card_eq_card_quotient_mul_card_add_subgroup N at h,
   conv_lhs at h { rw ←nat.mul_one (fintype.card (quotient N)) },
-  apply subgroup.eq_bot_of_card_eq_one,
-  apply nat.eq_of_mul_eq_mul_left subgroup.card_pos h.symm,
+  apply add_subgroup.eq_bot_of_card_eq_one,
+  apply nat.eq_of_mul_eq_mul_left add_subgroup.card_pos h.symm,
 end
 
 end quotient_add_group
@@ -139,16 +144,20 @@ end
   
 end fingroup
 
+open add_subgroup
+
 lemma add_subgroup.not_subsingleton_of_prime_card {G : Type*} [add_group G] [fintype G] :
   nat.prime (fintype.card G) → ¬ subsingleton G :=
 λ h1 h2,
 have h : fintype.card G = 1 := fintype.card_eq_one_iff.mpr ⟨0, λ g, @subsingleton.elim _ h2 g 0⟩,
 by { rw [h] at h1, exact nat.not_prime_one h1 }
 
+local attribute [instance] classical.prop_decidable
+
 lemma add_subgroup.is_simple_of_prime_card {G : Type*} [add_group G] [fintype G] :
   nat.prime (fintype.card G) → is_simple_add G :=
 λ h N _, begin
-  have hp := card_subgroup_dvd_card N, -- FIXME:
+  have hp := card_add_subgroup_dvd_card N,
   rw nat.dvd_prime h at hp,
   cases hp,
   { left, exact eq_bot_of_card_eq_one hp },

@@ -47,7 +47,7 @@ lemma map_mk'_eq_top {K : subgroup G} (hNK : N ≤ K) : K.map (mk' N) = ⊤ ↔ 
     convert_to g' * (g'⁻¹ * g) ∈ K, { simp },
     exact mul_mem K hg' (hNK hg),
   end),
-λ h, ext' $ h.symm ▸ set.image_univ_of_surjective (surjective_quot_mk _)⟩
+λ h, set_like.ext' $ h.symm ▸ set.image_univ_of_surjective (surjective_quot_mk _)⟩
 
 @[to_additive]
 lemma le_comap_mk' {K : subgroup (quotient N)} : N ≤ comap (mk' N) K :=

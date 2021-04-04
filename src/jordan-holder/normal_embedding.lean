@@ -43,7 +43,7 @@ le_antisymm (by { rintros x ⟨y, rfl⟩, rw [subsingleton.elim y 1, map_one, me
 def of_mul_equiv (h : G ≃* H) : normal_embedding G H :=
 ⟨h.to_monoid_hom, h.left_inv.injective,
   suffices heq : h.to_monoid_hom.range = ⊤, from heq.substr subgroup.top_normal,
-  ext' (h.to_monoid_hom.coe_range.trans $ h.surjective.range_eq)⟩
+  set_like.ext' (h.to_monoid_hom.coe_range.trans $ h.surjective.range_eq)⟩
 
 /- A normal embedding from `G` to `H` can be composed with a group isomorphism
 `H ≃* K` to produce a normal embedding from `G` to `K` -/
@@ -93,7 +93,7 @@ end
 
 @[to_additive]
 noncomputable lemma fintype [fintype G] (f : normal_embedding H G)
-  [decidable_pred f.φ.range.carrier] : fintype H :=
+  [decidable_pred (λ x, x ∈ f.φ.range)] : fintype H :=
 fintype.of_equiv f.φ.range f.equiv_range.to_equiv.symm
 
 variables (f : normal_embedding H G) (g : normal_embedding K G)
