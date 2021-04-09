@@ -531,7 +531,7 @@ begin
   rw a_succ_of_not_sq hsq, linarith,
 end
 
-theorem periodic_iff_mul_three (a₀ : ℕ) (h : 1 < a₀) : periodic a₀ ↔ 3 ∣ a₀ :=
+theorem imo2017q1 (a₀ : ℕ) (h : 1 < a₀) : periodic a₀ ↔ 3 ∣ a₀ :=
 begin
   have h1 : ∀ n, 1 < a a₀ n := all_gt_one_of_gt_one h,
   split, swap,
