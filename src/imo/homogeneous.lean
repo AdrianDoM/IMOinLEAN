@@ -1,6 +1,6 @@
 import ring_theory.polynomial.homogeneous
 import data.list.basic
-import finset
+import .finset
 
 namespace mv_polynomial
 variables {σ : Type*} {τ : Type*} {R : Type*} {S : Type*}

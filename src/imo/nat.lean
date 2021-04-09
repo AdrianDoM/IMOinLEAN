@@ -2,10 +2,10 @@ import data.nat.gcd
 
 namespace nat
 
-lemma gcd_eq_zero_iff {m n : ℕ} :
-	m.gcd n = 0 ↔ m = 0 ∧ n = 0 :=
-⟨λ h, ⟨eq_zero_of_gcd_eq_zero_left h, eq_zero_of_gcd_eq_zero_right h⟩,
-	λ ⟨hm, hn⟩, hn ▸ hm.symm ▸ gcd_zero_left n⟩
+-- lemma gcd_eq_zero_iff {m n : ℕ} :
+-- 	m.gcd n = 0 ↔ m = 0 ∧ n = 0 :=
+-- ⟨λ h, ⟨eq_zero_of_gcd_eq_zero_left h, eq_zero_of_gcd_eq_zero_right h⟩,
+-- 	λ ⟨hm, hn⟩, hn ▸ hm.symm ▸ gcd_zero_left n⟩
 
 lemma lcm_eq_zero_iff {m n : ℕ} :
 	m.lcm n = 0 ↔ m = 0 ∨ n = 0 :=

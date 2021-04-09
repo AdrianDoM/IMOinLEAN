@@ -26,6 +26,4 @@ begin
 	exact ih.mpr (λ a ha, h a (mem_cons_of_mem ha)) h0,
 end
 
-#check sum_zero
-
 end multiset

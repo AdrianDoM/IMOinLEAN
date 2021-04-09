@@ -1,5 +1,5 @@
-import int
 import ring_theory.coprime
+import .int
 
 theorem int.is_coprime_iff_gcd_eq_one {m n : ℤ} : is_coprime m n ↔ int.gcd m n = 1 :=
 begin

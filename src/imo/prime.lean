@@ -2,7 +2,7 @@ import data.nat.prime
 import data.nat.totient
 import data.list.basic
 import data.nat.gcd
-import list
+import .list
 
 namespace nat
 

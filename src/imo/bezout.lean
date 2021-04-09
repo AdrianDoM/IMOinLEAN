@@ -1,6 +1,6 @@
 import data.int.gcd
 import data.list.zip
-open int (hiding mul_neg_eq_neg_mul_symm) euclidean_domain list
+open int (hiding gcd_a gcd_b gcd_eq_gcd_ab) (hiding mul_neg_eq_neg_mul_symm) euclidean_domain list
 
 lemma zip_with_mul_map_mul_right {α : Type*} [comm_ring α] (l₁ l₂ : list α) (r : α) :
 	zip_with (*) l₁ (l₂.map ((*) r)) = (zip_with (*) l₁ l₂).map ((*) r) :=
@@ -16,18 +16,18 @@ end
 x₁ * a₁ + ⋯ + xₙ * aₙ = gcd (x₁,...,xₙ). -/
 def bezout_factors : list ℤ → list ℤ
 | []        := []
-| (x :: tl) := let g := tl.foldr gcd 0 in gcd_a x g :: (bezout_factors tl).map ((*) (gcd_b x g))
+| (x :: tl) := let g := tl.foldr gcd 0 in
+  gcd_a x g :: (bezout_factors tl).map ((*) (gcd_b x g))
 
-lemma bezout_eq_gcd (l : list ℤ) : (l.zip_with (*) (bezout_factors l)).sum = l.foldr gcd 0 :=
-begin
-	induction l with x tl ih,
-	{	simp },
-	simp [bezout_factors],
-	rw [zip_with_mul_map_mul_right, sum_map_mul_left],
-	change _ + _ * (map id _).sum = _,
-	rw [map_id, ih, gcd_eq_gcd_ab, mul_comm (gcd_b _ _)],
+lemma bezout_eq_gcd : Π (l : list ℤ), (l.zip_with (*) (bezout_factors l)).sum = l.foldr gcd 0
+| []        := by simp
+| (x :: tl) := begin
+	simp [bezout_factors, zip_with_mul_map_mul_right, sum_map_mul_left],
+	show _ + _ * (map id _).sum = _,
+	rw [map_id, bezout_eq_gcd tl, gcd_eq_gcd_ab, mul_comm (gcd_b _ _)],
 end
 
+#eval bezout_factors [-20, -15, -12]
 #eval (zip_with (*) [-20, -15, -12] (bezout_factors [-20, -15, -12])).sum
 
 lemma int.eq_gcd_iff (a b : ℤ) (n : ℕ) :

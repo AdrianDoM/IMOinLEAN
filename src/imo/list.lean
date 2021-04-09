@@ -3,7 +3,7 @@ import data.list.erase_dup
 import data.list.zip
 import data.nat.gcd
 import algebra.euclidean_domain
-import nat
+import .nat
 
 namespace list
 
@@ -75,7 +75,7 @@ theorem map_zip_with {f : γ → δ} {g : α → β → γ} : ∀ (s : list α) 
 | (a::s) (b::t) := by simp only [true_and, map, eq_self_iff_true, zip_with_cons_cons];
 	apply map_zip_with
 
-theorem zip_with_map {f : γ → δ → ε} {g : α → γ} {h : β → δ} : ∀ (s : list α) (t : list β),
+theorem zip_with_map'' {f : γ → δ → ε} {g : α → γ} {h : β → δ} : ∀ (s : list α) (t : list β),
 	zip_with f (map g s) (map h t) = zip_with (λ a b, f (g a) (h b)) s t
 | [] t  := rfl
 | s  [] := by simp only [map_nil, zip_with_nil_right]
