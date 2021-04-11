@@ -156,7 +156,7 @@ end
 
 end descending
 
-theorem imo2014_q1 (hpos : ∀ n, 0 < a n) (hinc : ∀ n, a n < a (n + 1)) :
+theorem imo2014q1 (hpos : ∀ n, 0 < a n) (hinc : ∀ n, a n < a (n + 1)) :
   ∃! n : ℕ+,
   (a n : ℚ) < (↑∑ i : fin (n + 1), a i) / n ∧
   (↑∑ i : fin (n + 1), a i : ℚ) / n ≤ a (n + 1) :=
